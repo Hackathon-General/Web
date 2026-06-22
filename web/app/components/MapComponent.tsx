@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// תיקון אייקונים דיפולטיביים של Leaflet בסביבת Next.js / Web
+// תיקון אייקונים דיפולטיביים של Leaflet בסביבת Next.js
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -17,16 +17,16 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow.src || markerShadow,
 });
 
-// הגדרת אייקונים מותאמים אישית לפי סוגי הישויות בחמ"ל
+// הגדרת אייקונים מותאמים אישית (כתובות יציבות של סיכות גוגל מפס למניעת קריסות תמונות מקומיות)
 const stationIcon = new L.Icon({
-  iconUrl: "https://maps.google.com/mapfiles/ms/icons/green-dot.png", // סיכות ירוקות לתחנות הערכים
+  iconUrl: "https://maps.google.com/mapfiles/ms/icons/green-dot.png", // סיכות ירוקות לתחנות
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
 });
 
 const liveUserIcon = new L.Icon({
-  iconUrl: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", // סיכות כחולות למשתמשים/רצים חיים
+  iconUrl: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", // סיכות כחולות למשתמשים/רצים חיים מה-DB
   iconSize: [32, 32],
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
@@ -63,6 +63,8 @@ interface LivePin {
   lng: number;
   name?: string;
   source?: "phone" | "sensor";
+  speed?: number;
+  ts?: number;
 }
 
 interface TorchState {
@@ -81,8 +83,7 @@ interface MapComponentProps {
 }
 
 /**
- * קומפוננטת עזר פנימית לחישוב דינמי של גבולות המפה (Bounds)
- * וביצוע מרכוז וזום אוטומטיים (Fit Bounds) כך שכל השטח הרלוונטי יוצג במלואו.
+ * קומפוננטת עזר פנימית לחישוב דינמי של גבולות המפה (Bounds) וביצוע מרכוז
  */
 function RecenterMap({ stations, routes, livePins, torch }: MapComponentProps) {
   const map = useMap();
@@ -90,32 +91,27 @@ function RecenterMap({ stations, routes, livePins, torch }: MapComponentProps) {
   useEffect(() => {
     const allLatLngs: L.LatLngExpression[] = [];
 
-    // 1. הוספת נקודות תוואי מסלול הריצה והניווט
     routes.forEach((r) => {
       if (r.lat && r.lng) allLatLngs.push([r.lat, r.lng]);
     });
 
-    // 2. הוספת 13 תחנות ההתנדבות של העמותה
     stations.forEach((st) => {
       if (st.lat && st.lng) allLatLngs.push([st.lat, st.lng]);
     });
 
-    // 3. הוספת סיכות משתמשים ורצים בזמן אמת (טלפונים וחיישנים)
     livePins?.forEach((pin) => {
       if (pin.lat && pin.lng) allLatLngs.push([pin.lat, pin.lng]);
     });
 
-    // 4. הוספת מיקום הלפיד האקטיבי
     if (torch && torch.lat && torch.lng) {
       allLatLngs.push([torch.lat, torch.lng]);
     }
 
-    // הפעלת עדכון ה-Bounds במידה ויש נקודות תקפות במערך
     if (allLatLngs.length > 0) {
       const bounds = L.latLngBounds(allLatLngs);
       map.fitBounds(bounds, {
-        padding: [40, 40], // מרווח בטיחות של 40 פיקסלים משולי המסך
-        maxZoom: 13,       // Mניעת זום קרוב ומוגזם במקרה של נקודה בודדת
+        padding: [40, 40],
+        maxZoom: 13,
         animate: true,
       });
     }
@@ -132,12 +128,10 @@ export default function MapComponent({
   onSelectStation,
 }: MapComponentProps) {
   
-  // הכנת מערך קואורדינטות נקי לצורך שרטוט קו ה-Polyline של המסלול
   const polylinePositions = routes
     .filter((r) => r.lat && r.lng)
     .map((r) => [r.lat, r.lng] as L.LatLngExpression);
 
-  // נקודת מרכוז זמנית - תוחלף מיד בזמן הריצה על ידי רכיב ה-RecenterMap
   const defaultCenter: L.LatLngExpression = [32.73, 35.3];
 
   return (
@@ -148,9 +142,8 @@ export default function MapComponent({
         scrollWheelZoom={true}
         style={{ height: "100%", width: "100%" }}
       >
-        {/* שכבת המפה הבסיסית (OpenStreetMap) */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
@@ -162,7 +155,7 @@ export default function MapComponent({
           />
         )}
 
-        {/* 13 תחנות הערכים/התנדבות - הבלוק המתוקן והנקי */}
+        {/* 13 תחנות הערכים/התנדבות */}
         {stations.map((station) => (
           <Marker
             key={station.id}
@@ -188,7 +181,7 @@ export default function MapComponent({
           </Marker>
         ))}
 
-        {/* סיכות משתמשים/חיישנים בזמן אמת (Live Pins) */}
+        {/* 🚀 סיכות משתמשים/חיישנים בזמן אמת מתוך ה-DB (Live Pins) */}
         {livePins.map((pin) => (
           <Marker
             key={pin.id}
@@ -197,15 +190,26 @@ export default function MapComponent({
           >
             <Popup>
               <div style={{ textAlign: "right", direction: "rtl" }}>
-                <strong>{pin.name || "מטייל/ת בשביל"}</strong>
-                <p style={{ margin: "2px 0", fontSize: "11px", color: "#666" }}>
-                  מקור: {pin.source === "sensor" ? "חיישן בגד (IoT)" : "אפליקציית מובייל"}
+                <strong style={{ fontSize: "14px", color: "#1e40af" }}>
+                  👤 {pin.name || "מטייל/ת בשביל"}
+                </strong>
+                <p style={{ margin: "4px 0 2px 0", fontSize: "12px" }}>
+                  <strong>מיקום:</strong> {pin.lat.toFixed(4)}, {pin.lng.toFixed(4)}
+                </p>
+                {pin.speed !== undefined && pin.speed !== -1 && (
+                  <p style={{ margin: "2px 0", fontSize: "12px" }}>
+                    <strong>מהירות:</strong> {pin.speed} קמ"ש
+                  </p>
+                )}
+                <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "#666" }}>
+                  מקור: {pin.source === "sensor" ? "📟 חיישן בגד (IoT)" : "📱 אפליקציית מובייל"}
                 </p>
               </div>
             </Popup>
           </Marker>
         ))}
 
+        {/* מיקום הלפיד האקטיבי בשטח (Torch) */}
         {torch && torch.lat && torch.lng && (
           <Marker position={[torch.lat, torch.lng]} icon={torchIcon}>
             <Popup>
@@ -219,7 +223,6 @@ export default function MapComponent({
           </Marker>
         )}
 
-        {/* רכיב השליטה הדינמי במרחב הזום והמיקום של המפה */}
         <RecenterMap
           stations={stations}
           routes={routes}
