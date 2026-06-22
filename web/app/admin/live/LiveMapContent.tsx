@@ -211,20 +211,20 @@ export default function LiveMapContent() {
                 <Popup>
                   <div style={{ textAlign: "right", minWidth: 150 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <strong>{p.name ?? p.id}</strong>
                       {userProfile?.photoURL && (
                         <img
                           src={userProfile.photoURL}
                           alt=""
                           referrerPolicy="no-referrer"
                           style={{
-                            width: 24,
-                            height: 24,
+                            width: 32,
+                            height: 32,
                             borderRadius: "50%",
                             objectFit: "cover",
                           }}
                         />
                       )}
-                      <strong>{p.name ?? p.id}</strong>
                     </div>
                     <span
                       style={{
