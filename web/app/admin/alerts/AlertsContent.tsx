@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Fragment } from "react";
+import { useState, Fragment } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
@@ -14,24 +14,13 @@ import L from "leaflet";
 import {
   collection,
   addDoc,
-  onSnapshot,
   deleteDoc,
   doc,
-  orderBy,
-  query,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { colors } from "@/lib/content";
-
-interface AlertDoc {
-  id: string;
-  lat: number;
-  lng: number;
-  radius: number;
-  title: string;
-  message: string;
-  createdAt: number;
-}
+import { useAlerts } from "@/lib/hooks/useAlerts";
+import type { AlertDoc } from "@/lib/hooks/useAlerts";
 
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 
@@ -56,28 +45,13 @@ function MapClickHandler({
 export default function AlertsContent() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
-  const [alerts, setAlerts] = useState<AlertDoc[]>([]);
+  const { alerts } = useAlerts();
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [radiusM, setRadiusM] = useState("300");
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const q = query(
-      collection(db, "alerts"),
-      orderBy("createdAt", "desc")
-    );
-    const unsub = onSnapshot(q, (snap) =>
-      setAlerts(
-        snap.docs.map(
-          (d) => ({ id: d.id, ...(d.data() as object) }) as AlertDoc
-        )
-      )
-    );
-    return () => unsub();
-  }, []);
 
   const fire = async () => {
     if (!point || !message) return;

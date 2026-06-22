@@ -15,6 +15,7 @@ import { useLive } from "@/lib/hooks/useLive";
 import { useTorch } from "@/lib/hooks/useTorch";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useMissions } from "@/lib/hooks/useMissions";
+import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
   stations,
   routes,
@@ -60,11 +61,19 @@ function createMissionIcon(active: boolean) {
   });
 }
 
+const alertIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.danger};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
 export default function LiveMapContent() {
   const pins = useLive();
   const { torch } = useTorch();
   const { users } = useUsers();
   const { missions } = useMissions();
+  const { alerts } = useAlerts();
   const [selectedPin, setSelectedPin] = useState<LivePin | null>(null);
 
   const [showHikers, setShowHikers] = useState(true);
@@ -72,6 +81,7 @@ export default function LiveMapContent() {
   const [showStations, setShowStations] = useState(true);
   const [showTorch, setShowTorch] = useState(true);
   const [showMissions, setShowMissions] = useState(true);
+  const [showAlerts, setShowAlerts] = useState(true);
 
   const phones = pins.filter((p) => p.source !== "sensor").length;
   const sensors = pins.filter((p) => p.source === "sensor").length;
@@ -86,7 +96,7 @@ export default function LiveMapContent() {
       <div className="page-header">
         <h1 className="page-title">🗺️ מפה חיה — God Mode</h1>
         <p className="page-subtitle">
-          📱 {phones} מטיילים · 📡 {sensors} חיישנים · 📋 {missions.filter(m => m.active).length} משימות
+          📱 {phones} מטיילים · 📡 {sensors} חיישנים · 📋 {missions.filter(m => m.active).length} משימות · 🚨 {alerts.length} התראות
           {torch
             ? ` · 🔥 לפיד ${torch.status === "held" ? "נישא" : "ממתין"}`
             : ""}
@@ -131,6 +141,10 @@ export default function LiveMapContent() {
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showMissions} onChange={(e) => setShowMissions(e.target.checked)} />
             משימות (📋)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showAlerts} onChange={(e) => setShowAlerts(e.target.checked)} />
+            התראות (🚨)
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showTorch} onChange={(e) => setShowTorch(e.target.checked)} />
@@ -318,6 +332,36 @@ export default function LiveMapContent() {
               />
             </Fragment>
           ))}
+
+          {/* Alert markers */}
+          {showAlerts && alerts.map((a) => (
+            <Fragment key={a.id}>
+              <Marker
+                position={[a.lat, a.lng]}
+                icon={alertIcon}
+              >
+                <Popup>
+                  <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
+                    <strong style={{ fontSize: "0.9375rem", display: "block" }}>🚨 {a.title}</strong>
+                    <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{a.message}</p>
+                    <span style={{ fontSize: "0.6875rem", color: "#888" }}>
+                      {new Date(a.createdAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                </Popup>
+              </Marker>
+              <Circle
+                center={[a.lat, a.lng]}
+                radius={a.radius}
+                pathOptions={{
+                  color: colors.danger,
+                  fillColor: colors.danger,
+                  fillOpacity: 0.08,
+                  dashArray: "3 3",
+                }}
+              />
+            </Fragment>
+          ))}
         </MapContainer>
       </div>
 
@@ -371,6 +415,19 @@ export default function LiveMapContent() {
             }}
           />{" "}
           משימות NFR
+        </span>
+        <span>
+          <span
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: colors.danger,
+              marginLeft: 4,
+            }}
+          />{" "}
+          התראות GPS
         </span>
         <span>🔥 לפיד</span>
         <span>
