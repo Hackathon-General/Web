@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin/feed", label: "פיד קהילתי", icon: "📰" },
   { href: "/admin/users", label: "משתמשים", icon: "👥" },
   { href: "/admin/stations", label: "תחנות", icon: "📍" },
+  { href: "/admin/docs", label: "מדריך פיתוח", icon: "📚" },
 ];
 
 export default function AdminLayout({
