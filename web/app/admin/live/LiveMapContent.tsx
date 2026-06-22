@@ -12,6 +12,7 @@ import {
 import L from "leaflet";
 import { useLive } from "@/lib/hooks/useLive";
 import { useTorch } from "@/lib/hooks/useTorch";
+import { useUsers } from "@/lib/hooks/useUsers";
 import {
   stations,
   routes,
@@ -51,6 +52,7 @@ const torchIcon = L.divIcon({
 export default function LiveMapContent() {
   const pins = useLive();
   const { torch } = useTorch();
+  const { users } = useUsers();
   const [selectedPin, setSelectedPin] = useState<LivePin | null>(null);
 
   const phones = pins.filter((p) => p.source === "phone").length;
@@ -139,47 +141,64 @@ export default function LiveMapContent() {
           })}
 
           {/* Live pins */}
-          {pins.map((p) => (
-            <CircleMarker
-              key={p.id}
-              center={[p.lat, p.lng]}
-              radius={6}
-              pathOptions={{
-                fillColor:
-                  p.source === "sensor" ? colors.sky : colors.forest,
-                fillOpacity: 0.9,
-                color: "#fff",
-                weight: 2,
-              }}
-              eventHandlers={{
-                click: () => setSelectedPin(p),
-              }}
-            >
-              <Popup>
-                <div style={{ textAlign: "right", minWidth: 150 }}>
-                  <strong>{p.name ?? p.id}</strong>
-                  <br />
-                  <span
-                    style={{
-                      color:
-                        p.source === "sensor"
-                          ? colors.sky
-                          : colors.forest,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {p.source === "sensor" ? "חיישן IoT" : "מטייל/ת"}
-                  </span>
-                  {p.speed != null && (
-                    <>
-                      <br />
-                      מהירות: {p.speed.toFixed(1)} מ׳/ש
-                    </>
-                  )}
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
+          {pins.map((p) => {
+            const userProfile = p.source === "phone" ? users.find((u) => u.uid === p.id) : null;
+            return (
+              <CircleMarker
+                key={p.id}
+                center={[p.lat, p.lng]}
+                radius={6}
+                pathOptions={{
+                  fillColor:
+                    p.source === "sensor" ? colors.sky : colors.forest,
+                  fillOpacity: 0.9,
+                  color: "#fff",
+                  weight: 2,
+                }}
+                eventHandlers={{
+                  click: () => setSelectedPin(p),
+                }}
+              >
+                <Popup>
+                  <div style={{ textAlign: "right", minWidth: 150 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      {userProfile?.photoURL && (
+                        <img
+                          src={userProfile.photoURL}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      )}
+                      <strong>{p.name ?? p.id}</strong>
+                    </div>
+                    <span
+                      style={{
+                        color:
+                          p.source === "sensor"
+                            ? colors.sky
+                            : colors.forest,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {p.source === "sensor" ? "חיישן IoT" : "מטייל/ת"}
+                    </span>
+                    {p.speed != null && (
+                      <>
+                        <br />
+                        מהירות: {p.speed.toFixed(1)} מ׳/ש
+                      </>
+                    )}
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
 
           {/* Torch marker */}
           {torch && (
