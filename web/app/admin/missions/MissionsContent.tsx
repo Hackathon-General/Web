@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Fragment } from "react";
+import { useState, Fragment } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
@@ -14,26 +14,14 @@ import L from "leaflet";
 import {
   collection,
   addDoc,
-  onSnapshot,
   updateDoc,
   deleteDoc,
   doc,
-  orderBy,
-  query,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { colors } from "@/lib/content";
-
-interface NFR {
-  id: string;
-  lat: number;
-  lng: number;
-  radius: number;
-  title: string;
-  task: string;
-  active: boolean;
-  createdAt: number;
-}
+import { useMissions } from "@/lib/hooks/useMissions";
+import type { NFR } from "@/lib/hooks/useMissions";
 
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 
@@ -60,25 +48,13 @@ function MapClickHandler({
 export default function MissionsContent() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
-  const [nfrs, setNfrs] = useState<NFR[]>([]);
+  const { missions: nfrs } = useMissions();
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [title, setTitle] = useState("");
   const [task, setTask] = useState("");
   const [radiusM, setRadiusM] = useState("150");
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const q = query(collection(db, "nfrs"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(q, (snap) =>
-      setNfrs(
-        snap.docs.map(
-          (d) => ({ id: d.id, ...(d.data() as object) }) as NFR
-        )
-      )
-    );
-    return () => unsub();
-  }, []);
 
   const save = async () => {
     if (!point || !title) return;

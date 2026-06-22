@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -8,11 +8,13 @@ import {
   Polyline,
   Popup,
   CircleMarker,
+  Circle,
 } from "react-leaflet";
 import L from "leaflet";
 import { useLive } from "@/lib/hooks/useLive";
 import { useTorch } from "@/lib/hooks/useTorch";
 import { useUsers } from "@/lib/hooks/useUsers";
+import { useMissions } from "@/lib/hooks/useMissions";
 import {
   stations,
   routes,
@@ -49,16 +51,27 @@ const torchIcon = L.divIcon({
   iconAnchor: [12, 12],
 });
 
+function createMissionIcon(active: boolean) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${active ? colors.terracotta : "#999"};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
+
 export default function LiveMapContent() {
   const pins = useLive();
   const { torch } = useTorch();
   const { users } = useUsers();
+  const { missions } = useMissions();
   const [selectedPin, setSelectedPin] = useState<LivePin | null>(null);
 
   const [showHikers, setShowHikers] = useState(true);
   const [showSensors, setShowSensors] = useState(true);
   const [showStations, setShowStations] = useState(true);
   const [showTorch, setShowTorch] = useState(true);
+  const [showMissions, setShowMissions] = useState(true);
 
   const phones = pins.filter((p) => p.source !== "sensor").length;
   const sensors = pins.filter((p) => p.source === "sensor").length;
@@ -73,7 +86,7 @@ export default function LiveMapContent() {
       <div className="page-header">
         <h1 className="page-title">🗺️ מפה חיה — God Mode</h1>
         <p className="page-subtitle">
-          📱 {phones} מטיילים · 📡 {sensors} חיישנים
+          📱 {phones} מטיילים · 📡 {sensors} חיישנים · 📋 {missions.filter(m => m.active).length} משימות
           {torch
             ? ` · 🔥 לפיד ${torch.status === "held" ? "נישא" : "ממתין"}`
             : ""}
@@ -114,6 +127,10 @@ export default function LiveMapContent() {
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showStations} onChange={(e) => setShowStations(e.target.checked)} />
             תחנות (📍)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showMissions} onChange={(e) => setShowMissions(e.target.checked)} />
+            משימות (📋)
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showTorch} onChange={(e) => setShowTorch(e.target.checked)} />
@@ -271,6 +288,36 @@ export default function LiveMapContent() {
               </Popup>
             </Marker>
           )}
+
+          {/* Mission markers */}
+          {showMissions && missions.map((nfr) => (
+            <Fragment key={nfr.id}>
+              <Marker
+                position={[nfr.lat, nfr.lng]}
+                icon={createMissionIcon(nfr.active)}
+              >
+                <Popup>
+                  <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
+                    <strong style={{ fontSize: "0.9375rem", display: "block" }}>📋 {nfr.title}</strong>
+                    {nfr.task && <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{nfr.task}</p>}
+                    <span style={{ fontSize: "0.75rem", fontWeight: 700, color: nfr.active ? colors.terracotta : "#999" }}>
+                      {nfr.active ? "● משימה פעילה" : "○ משימה כבויה"}
+                    </span>
+                  </div>
+                </Popup>
+              </Marker>
+              <Circle
+                center={[nfr.lat, nfr.lng]}
+                radius={nfr.radius}
+                pathOptions={{
+                  color: nfr.active ? colors.terracotta : "#999",
+                  fillColor: nfr.active ? colors.terracotta : "#999",
+                  fillOpacity: nfr.active ? 0.15 : 0.05,
+                  dashArray: nfr.active ? undefined : "4 4",
+                }}
+              />
+            </Fragment>
+          ))}
         </MapContainer>
       </div>
 
@@ -311,6 +358,19 @@ export default function LiveMapContent() {
             }}
           />{" "}
           חיישנים
+        </span>
+        <span>
+          <span
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: colors.terracotta,
+              marginLeft: 4,
+            }}
+          />{" "}
+          משימות NFR
         </span>
         <span>🔥 לפיד</span>
         <span>
