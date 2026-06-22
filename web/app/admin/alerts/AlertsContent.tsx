@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
@@ -8,6 +8,7 @@ import {
   Marker,
   Circle,
   useMapEvents,
+  Popup,
 } from "react-leaflet";
 import L from "leaflet";
 import {
@@ -153,6 +154,34 @@ export default function AlertsContent() {
                   />
                 </>
               )}
+              {alerts.map((a) => (
+                <Fragment key={a.id}>
+                  <Marker
+                    position={[a.lat, a.lng]}
+                    icon={alertIcon}
+                  >
+                    <Popup>
+                      <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
+                        <strong style={{ fontSize: "0.9375rem", display: "block" }}>🚨 {a.title}</strong>
+                        <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{a.message}</p>
+                        <span style={{ fontSize: "0.6875rem", color: "#888" }}>
+                          {new Date(a.createdAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                  <Circle
+                    center={[a.lat, a.lng]}
+                    radius={a.radius}
+                    pathOptions={{
+                      color: colors.danger,
+                      fillColor: colors.danger,
+                      fillOpacity: 0.08,
+                      dashArray: "3 3",
+                    }}
+                  />
+                </Fragment>
+              ))}
             </MapContainer>
           </div>
 

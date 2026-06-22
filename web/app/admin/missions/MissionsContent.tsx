@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
@@ -8,6 +8,7 @@ import {
   Marker,
   Circle,
   useMapEvents,
+  Popup,
 } from "react-leaflet";
 import L from "leaflet";
 import {
@@ -36,12 +37,14 @@ interface NFR {
 
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 
-const missionIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.terracotta};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-});
+function createMissionIcon(active: boolean) {
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${active ? colors.terracotta : "#999"};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
 
 function MapClickHandler({
   onMapClick,
@@ -144,7 +147,7 @@ export default function MissionsContent() {
                 <>
                   <Marker
                     position={[point.lat, point.lng]}
-                    icon={missionIcon}
+                    icon={createMissionIcon(true)}
                   />
                   <Circle
                     center={[point.lat, point.lng]}
@@ -157,6 +160,34 @@ export default function MissionsContent() {
                   />
                 </>
               )}
+              {nfrs.map((nfr) => (
+                <Fragment key={nfr.id}>
+                  <Marker
+                    position={[nfr.lat, nfr.lng]}
+                    icon={createMissionIcon(nfr.active)}
+                  >
+                    <Popup>
+                      <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
+                        <strong style={{ fontSize: "0.9375rem", display: "block" }}>{nfr.title}</strong>
+                        {nfr.task && <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{nfr.task}</p>}
+                        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: nfr.active ? colors.terracotta : "#999" }}>
+                          {nfr.active ? "● פעילה" : "○ כבויה"}
+                        </span>
+                      </div>
+                    </Popup>
+                  </Marker>
+                  <Circle
+                    center={[nfr.lat, nfr.lng]}
+                    radius={nfr.radius}
+                    pathOptions={{
+                      color: nfr.active ? colors.terracotta : "#999",
+                      fillColor: nfr.active ? colors.terracotta : "#999",
+                      fillOpacity: nfr.active ? 0.15 : 0.05,
+                      dashArray: nfr.active ? undefined : "4 4",
+                    }}
+                  />
+                </Fragment>
+              ))}
             </MapContainer>
           </div>
 
