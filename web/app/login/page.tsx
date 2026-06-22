@@ -12,10 +12,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (initializing) return;
-    if (user && role === "admin") {
+    if (user) {
       router.replace("/admin");
     }
-  }, [user, role, initializing, router]);
+  }, [user, initializing, router]);
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -34,34 +34,6 @@ export default function LoginPage() {
     return (
       <div className="loading-page">
         <div className="spinner" />
-      </div>
-    );
-  }
-
-  if (user && role !== "admin") {
-    return (
-      <div className="login-page">
-        <div className="login-card animate-fade-in">
-          <h1>⛔ אין הרשאה</h1>
-          <p className="tagline" style={{ marginTop: "var(--sp-md)" }}>
-            המשתמש <strong>{user.email}</strong> אינו מוגדר כמנהל.
-            <br />
-            פנה לצוות הפרויקט לקבלת הרשאות.
-          </p>
-          <button
-            className="btn-google"
-            style={{ marginTop: "var(--sp-lg)" }}
-            onClick={() => {
-              import("firebase/auth").then(({ signOut: fbSignOut }) => {
-                import("@/lib/firebase").then(({ auth: fbAuth }) => {
-                  fbSignOut(fbAuth);
-                });
-              });
-            }}
-          >
-            🔄 התנתק ונסה חשבון אחר
-          </button>
-        </div>
       </div>
     );
   }

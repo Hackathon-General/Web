@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
   TileLayer,
@@ -54,6 +55,8 @@ function MapClickHandler({
 }
 
 export default function MissionsContent() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [nfrs, setNfrs] = useState<NFR[]>([]);
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [title, setTitle] = useState("");
@@ -132,9 +135,11 @@ export default function MissionsContent() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapClickHandler
-                onMapClick={(lat, lng) => setPoint({ lat, lng })}
-              />
+              {isAdmin && (
+                <MapClickHandler
+                  onMapClick={(lat, lng) => setPoint({ lat, lng })}
+                />
+              )}
               {point && (
                 <>
                   <Marker
@@ -155,55 +160,67 @@ export default function MissionsContent() {
             </MapContainer>
           </div>
 
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.8125rem",
-              color: "var(--c-muted)",
-              marginBottom: "var(--sp-md)",
-            }}
-          >
-            לחץ על המפה כדי לקבע מיקום
-          </p>
-
-          <div className="card">
-            <div className="form-group">
-              <label className="input-label">כותרת המשימה *</label>
-              <input
-                className="input"
-                placeholder="לדוג׳: ניקוי שביל בהושעיה"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="input-label">תיאור המשימה</label>
-              <textarea
-                className="input"
-                placeholder="פירוט המשימה..."
-                value={task}
-                onChange={(e) => setTask(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="input-label">רדיוס (מטרים)</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="150"
-                value={radiusM}
-                onChange={(e) => setRadiusM(e.target.value)}
-              />
-            </div>
-            <button
-              className="btn btn-primary btn-pill"
-              style={{ width: "100%" }}
-              onClick={save}
-              disabled={!point || !title || saving}
+          {isAdmin && (
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "0.8125rem",
+                color: "var(--c-muted)",
+                marginBottom: "var(--sp-md)",
+              }}
             >
-              {saving ? "שומר..." : "📋 פרסם משימה"}
-            </button>
-          </div>
+              לחץ על המפה כדי לקבע מיקום
+            </p>
+          )}
+
+          {isAdmin ? (
+            <div className="card">
+              <div className="form-group">
+                <label className="input-label">כותרת המשימה *</label>
+                <input
+                  className="input"
+                  placeholder="לדוג׳: ניקוי שביל בהושעיה"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="input-label">תיאור המשימה</label>
+                <textarea
+                  className="input"
+                  placeholder="פירוט המשימה..."
+                  value={task}
+                  onChange={(e) => setTask(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="input-label">רדיוס (מטרים)</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="150"
+                  value={radiusM}
+                  onChange={(e) => setRadiusM(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn btn-primary btn-pill"
+                style={{ width: "100%" }}
+                onClick={save}
+                disabled={!point || !title || saving}
+              >
+                {saving ? "שומר..." : "📋 פרסם משימה"}
+              </button>
+            </div>
+          ) : (
+            <div className="card" style={{ textAlign: "center", padding: "var(--sp-lg)" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)" }}>🔒</div>
+              <strong style={{ display: "block", marginBottom: 4 }}>מצב צפייה בלבד</strong>
+              <p style={{ fontSize: "0.8125rem", color: "var(--c-muted)", margin: 0 }}>
+                אין לך הרשאות ליצור, להשבית או למחוק משימות.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Missions list */}
@@ -270,20 +287,22 @@ export default function MissionsContent() {
                     רדיוס: {nfr.radius}מ ·{" "}
                     {new Date(nfr.createdAt).toLocaleDateString("he-IL")}
                   </p>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => toggleActive(nfr)}
-                    >
-                      {nfr.active ? "השבת" : "הפעל"}
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => setDeleteId(nfr.id)}
-                    >
-                      מחק
-                    </button>
-                  </div>
+                  {isAdmin && (
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => toggleActive(nfr)}
+                      >
+                        {nfr.active ? "השבת" : "הפעל"}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setDeleteId(nfr.id)}
+                      >
+                        מחק
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

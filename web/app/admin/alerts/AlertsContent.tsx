@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/AuthProvider";
 import {
   MapContainer,
   TileLayer,
@@ -52,6 +53,8 @@ function MapClickHandler({
 }
 
 export default function AlertsContent() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [alerts, setAlerts] = useState<AlertDoc[]>([]);
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [title, setTitle] = useState("");
@@ -128,9 +131,11 @@ export default function AlertsContent() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapClickHandler
-                onMapClick={(lat, lng) => setPoint({ lat, lng })}
-              />
+              {isAdmin && (
+                <MapClickHandler
+                  onMapClick={(lat, lng) => setPoint({ lat, lng })}
+                />
+              )}
               {point && (
                 <>
                   <Marker
@@ -151,55 +156,67 @@ export default function AlertsContent() {
             </MapContainer>
           </div>
 
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.8125rem",
-              color: "var(--c-muted)",
-              marginBottom: "var(--sp-md)",
-            }}
-          >
-            לחץ על המפה כדי לקבוע מרכז הרדיוס
-          </p>
-
-          <div className="card">
-            <div className="form-group">
-              <label className="input-label">כותרת (אופציונלי)</label>
-              <input
-                className="input"
-                placeholder="לדוג׳: שביל חסום"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="input-label">הודעת ההתראה *</label>
-              <textarea
-                className="input"
-                placeholder="פרטי ההתראה..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="input-label">רדיוס (מטרים)</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="300"
-                value={radiusM}
-                onChange={(e) => setRadiusM(e.target.value)}
-              />
-            </div>
-            <button
-              className="btn btn-danger btn-pill"
-              style={{ width: "100%" }}
-              onClick={fire}
-              disabled={!point || !message || saving}
+          {isAdmin && (
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "0.8125rem",
+                color: "var(--c-muted)",
+                marginBottom: "var(--sp-md)",
+              }}
             >
-              {saving ? "שולח..." : "🚨 שגר התראה"}
-            </button>
-          </div>
+              לחץ על המפה כדי לקבוע מרכז הרדיוס
+            </p>
+          )}
+
+          {isAdmin ? (
+            <div className="card">
+              <div className="form-group">
+                <label className="input-label">כותרת (אופציונלי)</label>
+                <input
+                  className="input"
+                  placeholder="לדוג׳: שביל חסום"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="input-label">הודעת ההתראה *</label>
+                <textarea
+                  className="input"
+                  placeholder="פרטי ההתראה..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="input-label">רדיוס (מטרים)</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="300"
+                  value={radiusM}
+                  onChange={(e) => setRadiusM(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn btn-danger btn-pill"
+                style={{ width: "100%" }}
+                onClick={fire}
+                disabled={!point || !message || saving}
+              >
+                {saving ? "שולח..." : "🚨 שגר התראה"}
+              </button>
+            </div>
+          ) : (
+            <div className="card" style={{ textAlign: "center", padding: "var(--sp-lg)" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)" }}>🔒</div>
+              <strong style={{ display: "block", marginBottom: 4 }}>מצב צפייה בלבד</strong>
+              <p style={{ fontSize: "0.8125rem", color: "var(--c-muted)", margin: 0 }}>
+                אין לך הרשאות לשגר או למחוק התראות.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Alerts list */}
@@ -265,12 +282,14 @@ export default function AlertsContent() {
                   >
                     רדיוס: {a.radius}מ
                   </p>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setDeleteId(a.id)}
-                  >
-                    🗑️ מחק
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setDeleteId(a.id)}
+                    >
+                      🗑️ מחק
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

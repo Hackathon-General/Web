@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useFeed, deleteFeedPost } from "@/lib/hooks/useFeed";
+import { useAuth } from "@/lib/AuthProvider";
 
 export default function FeedPage() {
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const { posts, loading } = useFeed(200);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -115,13 +118,15 @@ export default function FeedPage() {
                     referrerPolicy="no-referrer"
                   />
                 )}
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ marginTop: 8 }}
-                  onClick={() => setDeleteId(p.id)}
-                >
-                  🗑️ מחק פוסט
-                </button>
+                {isAdmin && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ marginTop: 8 }}
+                    onClick={() => setDeleteId(p.id)}
+                  >
+                    🗑️ מחק פוסט
+                  </button>
+                )}
               </div>
             </div>
           ))

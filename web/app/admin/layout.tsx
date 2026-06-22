@@ -29,10 +29,8 @@ export default function AdminLayout({
     if (initializing) return;
     if (!user) {
       router.replace("/login");
-    } else if (role !== "admin") {
-      router.replace("/login");
     }
-  }, [user, role, initializing, router]);
+  }, [user, initializing, router]);
 
   if (initializing) {
     return (
@@ -42,7 +40,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || role !== "admin") {
+  if (!user) {
     return (
       <div className="loading-page">
         <div className="spinner" />
@@ -55,7 +53,7 @@ export default function AdminLayout({
       <aside className="sidebar">
         <div className="sidebar-brand">
           <h1>שביל כרמל-כנרת</h1>
-          <p>חמ״ל — God Mode</p>
+          <p>{role === "admin" ? "חמ״ל — God Mode" : "חמ״ל — צפייה בלבד"}</p>
         </div>
 
         <nav className="sidebar-nav">
@@ -82,7 +80,7 @@ export default function AdminLayout({
             {user.photoURL ? (
               <img
                 src={user.photoURL}
-                alt={user.displayName ?? "Admin"}
+                alt={user.displayName ?? "User"}
                 referrerPolicy="no-referrer"
               />
             ) : (
@@ -105,9 +103,11 @@ export default function AdminLayout({
             )}
             <div className="sidebar-user-info">
               <div className="sidebar-user-name">
-                {user.displayName ?? "מנהל"}
+                {user.displayName ?? "משתמש"}
               </div>
-              <div className="sidebar-user-email">{user.email}</div>
+              <div className="sidebar-user-email">
+                {user.email} {role !== "admin" && <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>(צפייה בלבד)</span>}
+              </div>
             </div>
           </div>
           <button className="btn-signout" onClick={signOut}>
