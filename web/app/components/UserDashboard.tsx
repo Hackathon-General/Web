@@ -1,6 +1,17 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
+
+// טעינה דינמית של קומפוננטת המפה האמיתית למניעת שגיאות SSR (צד שרת)
+const MapComponent = dynamic(() => import('./MapComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center text-slate-400">
+      🛰️ טוען רשת לוויין ומפה חיה...
+    </div>
+  ),
+});
 
 // נתוני מקטעים רשמיים מבוססי אתר כרמל-כנרת
 const trailSegments = [
@@ -29,65 +40,101 @@ const mockFeed = [
 export default function UserDashboard() {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'torch'>('overview');
 
-  // מערך לפידים פעילים בשטח (יתחבר ל-Firebase בהמשך)
+  // מערך לפידים פעילים בשטח כולל סטטוס תנועה (isMoving)
   const [activeTorches, setActiveTorches] = useState([
-    { id: "torch_1", holder: "קבוצת צוערי תקשוב", coords: "32.6743, 35.0841", description: "חניון האגם - כרמל", lastUpdated: "היום, 15:30" },
-    { id: "torch_2", holder: "משפחת אלון", coords: "32.6210, 35.1234", description: "תצפית המוחרקה", lastUpdated: "היום, 14:15" },
-    { id: "torch_3", holder: "צוות איתן (רצי שטח)", coords: "32.5567, 35.2456", description: "כניסה לעמק יזרעאל", lastUpdated: "היום, 16:05" }
+    { id: "torch_1", holder: "קבוצת צוערי תקשוב", coords: "32.6743, 35.0841", description: "חניון האגם - כרמל", lastUpdated: "היום, 15:30", isMoving: false },
+    { id: "torch_2", holder: "משפחת אלון", coords: "32.6210, 35.1234", description: "תצפית המוחרקה", lastUpdated: "היום, 14:15", isMoving: false },
+    { id: "torch_3", holder: "צוות איתן (רצי שטח)", coords: "32.5567, 35.2456", description: "כניסה לעמק יזרעאל", lastUpdated: "היום, 16:05", isMoving: true }
   ]);
 
   // סטייט ללפיד הנבחר לצורך הצגה במפה
   const [selectedTorchId, setSelectedTorchId] = useState("torch_1");
 
-  // ניהול סוג הפעולה בטופס: 'update' (עדכון קיים) או 'create' (הזנקת לפיד חדש)
-  const [actionType, setActionType] = useState<'update' | 'create'>('update');
+  // ניהול סוג הפעולה בטופס הצידי: 'take' (איסוף שליחים), 'update' (נעיצה/עדכון), או 'create' (הזנקה חדשה)
+  const [actionType, setActionType] = useState<'take' | 'update' | 'create'>('take');
 
-  // שדות הטופס לנעיצה חדשה
+  // שדות הטופס
   const [targetTorchId, setTargetTorchId] = useState("torch_1");
-  const [newTorchName, setNewTorchName] = useState(''); // עבור לפיד חדש
+  const [newTorchName, setNewTorchName] = useState('');
   const [newCoords, setNewCoords] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [isLocating, setIsLocating] = useState(false);
 
-  // פונקציה לשליפת מיקום מה-GPS של המכשיר בשטח
-  const handleGetLocation = () => {
+  // חישוב מרחק אווירי במטרים (Haversine Formula) לצורך Geofence של איסוף הלפיד
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // רדיוס כדור הארץ בקילומטרים
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c * 1000; // מרחק במטרים
+  };
+
+  // שליפת מיקום מה-GPS של המכשיר
+  const handleGetLocation = (callback?: (coordsStr: string) => void) => {
     if (!navigator.geolocation) {
       alert("הדפדפן שלך אינו תומך בזיהוי מיקום גיאוגרפי.");
       return;
     }
-
     setIsLocating(true);
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const latitude = position.coords.latitude.toFixed(6);
         const longitude = position.coords.longitude.toFixed(6);
-        setNewCoords(`${latitude}, ${longitude}`);
+        const coordsStr = `${latitude}, ${longitude}`;
+        setNewCoords(coordsStr);
         setIsLocating(false);
+        if (callback) callback(coordsStr);
       },
       (error) => {
         setIsLocating(false);
-        alert("אירעה שגיאה בקבלת מיקום מה-GPS. ודא שהרשאות המיקום פעילות.");
+        alert("אירעה שגיאה בקבלת מיקום מה-GPS. ודא שהרשאות המיקום פעילות במכשיר.");
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
-  // פונקציה לניהול שליחת הטופס (עדכון או יצירת לפיד)
-  const handlePinTorch = (e: React.FormEvent) => {
+  // פונקציית איסוף לפיד (מירוץ שליחים מבוסס מרחק GPS)
+  const handleTakeTorchDirectly = (torchId: string) => {
+    handleGetLocation((userCoordsStr) => {
+      const targetTorch = activeTorches.find(t => t.id === torchId);
+      if (!targetTorch) return;
+
+      const [tLat, tLng] = targetTorch.coords.split(',').map(Number);
+      const [uLat, uLng] = userCoordsStr.split(',').map(Number);
+
+      const distanceInMeters = calculateDistance(tLat, tLng, uLat, uLng);
+
+      // חסימת איסוף מרחוק: המטייל חייב להיות ברדיוס של עד 250 מטרים מנקודת הנעיצה של הלפיד
+      if (distanceInMeters > 250) {
+        alert(`❌ מרחק רב מדי! אתה נמצא כ-${Math.round(distanceInMeters)} מטרים ממיקום הלפיד. עליך להגיע פיזית לנקודת המפגש של הלפיד בשביל על מנת לאסוף אותו ולהמשיך את המירוץ.`);
+        return;
+      }
+
+      setActiveTorches(prev => prev.map(t => t.id === torchId 
+        ? { ...t, holder: "אתה (המשך שליחים)", isMoving: true, lastUpdated: "עכשיו (נאסף על ידך)" } 
+        : t
+      ));
+      alert(`🔥 הלפיד אצלך! המקל עבר אליך בהצלחה. צא לדרך ונווט לאורך השביל, ובסיום המקטע אל תשכח לנעוץ אותו מחדש לקבוצות הבאות.`);
+    });
+  };
+
+  // ניהול שליחת הטופס לנעיצה או הזנקה
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCoords || !newDesc) return;
 
     if (actionType === 'update') {
-      // עדכון לפיד קיים
       setActiveTorches(prevTorches => 
         prevTorches.map(t => t.id === targetTorchId 
-          ? { ...t, coords: newCoords, description: newDesc, holder: "משתמש נוכחי (אתה)", lastUpdated: "עכשיו" }
+          ? { ...t, coords: newCoords, description: newDesc, holder: "משתמש נוכחי (אתה)", isMoving: false, lastUpdated: "עכשיו (נעוץ וממתין)" }
           : t
         )
       );
-    } else {
-      // יצירת לפיד חדש לגמרי בשטח
+      alert("📌 המיקום עודכן בהצלחה! הלפיד ננעץ בנקודה החדשה וממתין לרץ הבא בתור בשטח.");
+    } else if (actionType === 'create') {
       const nameToSave = newTorchName.trim() || "לפיד קהילתי חדש";
       const newId = `torch_${Date.now()}`;
       const newTorchItem = {
@@ -95,25 +142,24 @@ export default function UserDashboard() {
         holder: nameToSave,
         coords: newCoords,
         description: newDesc,
-        lastUpdated: "עכשיו (הזנקה)"
+        lastUpdated: "עכשיו (הזנקה)",
+        isMoving: true
       };
-      
       setActiveTorches(prevTorches => [...prevTorches, newTorchItem]);
-      setSelectedTorchId(newId); // מעביר אוטומטית את המפה לצפייה בלפיד החדש
+      setSelectedTorchId(newId);
       setNewTorchName('');
+      alert(`✨ לפיד שליחים חדש הושק והוזנק בהצלחה בנתיב!`);
     }
-    
     setNewCoords('');
     setNewDesc('');
   };
 
-  // מציאת הלפיד שנבחר לתצוגה במפה
   const currentSelectedTorch = activeTorches.find(t => t.id === selectedTorchId) || activeTorches[0];
 
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col gap-6">
       
-      {/* תפריט ניווט פנימי (טאבים) למטיילים */}
+      {/* סרגל ניווט פנימי (טאבים) */}
       <div className="flex border-b border-slate-800 gap-2 pb-px">
         <button
           onClick={() => setActiveSubTab('overview')}
@@ -130,7 +176,7 @@ export default function UserDashboard() {
         </button>
       </div>
 
-      {/* טאב 1: מבט על ופיד */}
+      {/* טאב 1: מבט על וסטטוס מקטעים כללי */}
       {activeSubTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -159,13 +205,11 @@ export default function UserDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {mockFeed.map((post) => (
                   <div key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between shadow-lg">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-amber-400">{post.author}</span>
-                        <span className="text-slate-500">{post.time}</span>
-                      </div>
-                      <p className="text-sm text-slate-300 leading-relaxed">{post.text}</p>
+                    <div className="flex justify-between items-center text-xs mb-2">
+                      <span className="font-bold text-amber-400">{post.author}</span>
+                      <span className="text-slate-500">{post.time}</span>
                     </div>
+                    <p className="text-sm text-slate-300 leading-relaxed">{post.text}</p>
                   </div>
                 ))}
               </div>
@@ -175,33 +219,33 @@ export default function UserDashboard() {
           <div className="space-y-6">
             <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 space-y-4 relative overflow-hidden shadow-xl">
               <h3 className="text-lg font-bold text-white">🌿 ערכי עמותת כרמל כנרת</h3>
-              <p className="text-xs text-slate-300">הכרת נופי המולדת דרך הרגליים, פיתוח אחריות סביבתית ושמירה על נכסי הטבע הלאומיים.</p>
+              <p className="text-xs text-slate-300 leading-relaxed">הכרת נופי המולדת דרך הרגליים, פיתוח אחריות סביבתית ושמירה על נכסי הטבע הלאומיים של שביל כרמל-כנרת.</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* טאב 2: ריבוי לפידים והעברה / הזנקה בשטח */}
+      {/* טאב 2: מערכת השליחים, ריבוי הלפידים והמפה האינטראקטיבית האמיתית */}
       {activeSubTab === 'torch' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* מפת הלפיד המרכזית ובחירת לפידים אקטיביים */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* רשימת כפתורי בחירה (Selector) בין הלפידים הפעילים */}
+            {/* רשימת כרטיסי הלפידים הפעילים בשטח */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {activeTorches.map((torch) => (
                 <button
                   key={torch.id}
                   onClick={() => setSelectedTorchId(torch.id)}
-                  className={`p-4 rounded-xl border text-right transition flex flex-col justify-between h-24 shadow-sm ${
+                  className={`p-4 rounded-xl border text-right transition flex flex-col justify-between h-28 shadow-sm ${
                     selectedTorchId === torch.id
                       ? 'bg-amber-500/10 border-amber-500 text-white shadow-md'
                       : 'bg-slate-900 border-slate-800/80 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   <div className="flex justify-between items-center w-full">
-                    <span className="text-xs font-black text-amber-400">🔥 לפיד פעיל</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${torch.isMoving ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                      {torch.isMoving ? "🏃 בתנועה" : "📌 ממתין לאיסוף"}
+                    </span>
                     <span className="text-[9px] text-slate-500 font-mono">{torch.id}</span>
                   </div>
                   <div>
@@ -212,127 +256,125 @@ export default function UserDashboard() {
               ))}
             </div>
 
-            {/* כרטיס המפה והנתונים של הלפיד הנבחר מהרשימה */}
+            {/* כרטיס תצוגת המפה האינטראקטיבית המלאה של הלפיד הנבחר */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-              <div className="border-b border-slate-800/60 pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <div className="border-b border-slate-800/60 pb-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-white">מיקוד גיאוגרפי: {currentSelectedTorch.holder}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">מיקום נוכחי מוצהר: <span className="text-slate-200 font-medium">{currentSelectedTorch.description}</span></p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white">{currentSelectedTorch.holder}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${currentSelectedTorch.isMoving ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                      {currentSelectedTorch.isMoving ? "המקטע מבוצע כעת בשטח" : "נעוץ וממתין לרץ הבא בתור"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">נקודה מוצהרת: <span className="text-slate-200 font-medium">{currentSelectedTorch.description}</span></p>
                 </div>
-                <div className="text-right sm:text-left text-xs text-slate-500">
-                  <span className="font-mono block">קואורדינטות: {currentSelectedTorch.coords}</span>
-                  <span className="block mt-0.5">עדכון אחרון: {currentSelectedTorch.lastUpdated}</span>
-                </div>
+                
+                {/* אפשרות לאיסוף ישיר מתוך חלונית המפה */}
+                {!currentSelectedTorch.isMoving && (
+                  <button
+                    type="button"
+                    onClick={() => handleTakeTorchDirectly(currentSelectedTorch.id)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black px-4 py-2 rounded-xl text-xs transition shadow-md whitespace-nowrap"
+                  >
+                    🏃 לחץ כאן לאיסוף הלפיד בשטח
+                  </button>
+                )}
               </div>
 
-              {/* סימולטור המפה */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl h-72 flex flex-col items-center justify-center text-slate-500 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(#d68c45_0.5px,transparent_0.5px)] [background-size:20px_20px] opacity-10"></div>
-                <span className="text-3xl mb-2 animate-bounce">🔥</span>
-                <p className="text-sm font-bold text-slate-300">מפת מעקב – ממוקדת על לפיד ({currentSelectedTorch.id})</p>
+              {/* הזרקת קומפוננטת המפה האמיתית (Leaflet) */}
+              <div className="h-80 w-full rounded-xl overflow-hidden relative border border-slate-800 shadow-inner">
+                <MapComponent torches={activeTorches} selectedTorchId={selectedTorchId} />
               </div>
             </div>
           </div>
 
-          {/* עמודה צידית: טופס דינמי לעדכון לפיד או הזנקת לפיד חדש */}
+          {/* עמודה צידית: מרכז ניהול הפעולות הדינמי */}
           <div className="space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
               <div>
-                <h3 className="text-lg font-bold text-white">📌 ניהול לפידים בשטח</h3>
-                <p className="text-xs text-slate-400 mt-1">עדכן נקודת לפיד קיים או דקור מיקום חדש כדי להזניק לפיד קהילתי נוסף</p>
+                <h3 className="text-lg font-bold text-white">📌 מרכז פעולות לפיד</h3>
+                <p className="text-xs text-slate-400 mt-1">נהל את סבב השליחים: קבל לפיד שהמתין בשטח, עדכן את מקומך או הזנק לפיד קהילתי חדש</p>
               </div>
 
-              {/* סלקטור לבחירת סוג הפעולה */}
-              <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-slate-800/60 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setActionType('update')}
-                  className={`py-2 rounded-lg font-bold transition ${actionType === 'update' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-                >
-                  🔄 עדכון לפיד קיים
+              {/* סלקטור לבחירת סוג הפעולה בטופס */}
+              <div className="grid grid-cols-3 p-1 bg-slate-950 rounded-xl border border-slate-800/60 text-[10px] font-bold">
+                <button type="button" onClick={() => setActionType('take')} className={`py-2 rounded-lg transition ${actionType === 'take' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}>
+                  🏃 איסוף לפיד
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActionType('create')}
-                  className={`py-2 rounded-lg font-bold transition ${actionType === 'create' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}
-                >
-                  ✨ הזנקת לפיד חדש
+                <button type="button" onClick={() => setActionType('update')} className={`py-2 rounded-lg transition ${actionType === 'update' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}>
+                  📌 נעיצה/עדכון
+                </button>
+                <button type="button" onClick={() => setActionType('create')} className={`py-2 rounded-lg transition ${actionType === 'create' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'}`}>
+                  ✨ הזנקה חדשה
                 </button>
               </div>
 
-              <form onSubmit={handlePinTorch} className="space-y-4">
-                {actionType === 'update' ? (
-                  /* שדה בחירת לפיד לעדכון */
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">בחר לפיד לעדכון</label>
-                    <select 
-                      value={targetTorchId}
-                      onChange={(e) => setTargetTorchId(e.target.value)}
-                      className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
-                    >
-                      {activeTorches.map(t => (
-                        <option key={t.id} value={t.id}>🔥 {t.holder} ({t.id})</option>
-                      ))}
-                    </select>
+              {/* אופציה 1: רשימת לפידים זמינים לאיסוף שליחים קרוב (GPS) */}
+              {actionType === 'take' && (
+                <div className="space-y-3 pt-2">
+                  <p className="text-xs text-slate-400 leading-relaxed">נמצא פיזית בנקודת המפגש שבה הושאר הלפיד בשטח? לחץ על הכפתור כדי לקחת עליו בעלות ולהמשיך את הריצה.</p>
+                  <div className="space-y-2">
+                    {activeTorches.filter(t => !t.isMoving).map(torch => (
+                      <div key={torch.id} className="bg-slate-950 border border-slate-800 p-3 rounded-xl flex justify-between items-center gap-2">
+                        <div>
+                          <span className="text-sm font-bold text-white block">{torch.holder}</span>
+                          <span className="text-[11px] text-slate-500 block">📍 {torch.description}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleTakeTorchDirectly(torch.id)}
+                          className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg text-xs transition whitespace-nowrap"
+                        >
+                          איסוף 🏃
+                        </button>
+                      </div>
+                    ))}
+                    {activeTorches.filter(t => !t.isMoving).length === 0 && (
+                      <p className="text-xs text-slate-500 text-center py-2 italic">כל הלפידים נמצאים כרגע בתנועה בשטח.</p>
+                    )}
                   </div>
-                ) : (
-                  /* שדה להזנת שם ללפיד חדש */
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">שם הלפיד / הקבוצה המזניקה</label>
-                    <input 
-                      type="text"
-                      value={newTorchName}
-                      onChange={(e) => setNewTorchName(e.target.value)}
-                      placeholder="לדוגמה: קבוצת עומר, צוות 3" 
-                      className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                      required
-                    />
-                  </div>
-                )}
-
-                {/* קואורדינטות קצה עם ה-GPS */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-[11px] font-bold text-slate-400">קואורדינטות מיקום</label>
-                    <button
-                      type="button"
-                      onClick={handleGetLocation}
-                      disabled={isLocating}
-                      className="text-[11px] font-bold text-amber-400 hover:text-amber-300 transition flex items-center gap-1 bg-amber-500/5 hover:bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 disabled:opacity-50"
-                    >
-                      {isLocating ? "🛰️ מאתר מיקום..." : "🎯 דקור מיקום נוכחי"}
-                    </button>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={newCoords}
-                    onChange={(e) => setNewCoords(e.target.value)}
-                    placeholder="קו רוחב, קו אורך" 
-                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
-                    required
-                  />
                 </div>
-                
-                {/* תיאור מיקום בשטח */}
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">תיאור המקום או סימן זיהוי בשטח</label>
-                  <input 
-                    type="text" 
-                    value={newDesc}
-                    onChange={(e) => setNewDesc(e.target.value)}
-                    placeholder="לדוגמה: ליד שלט חניון האגם" 
-                    className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    required
-                  />
-                </div>
+              )}
 
-                <button 
-                  type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black p-3 rounded-xl text-xs transition shadow-lg"
-                >
-                  {actionType === 'update' ? "עדכן מיקום לפיד נבחר 🚀" : "הזנק לפיד חדש לשטח ✨"}
-                </button>
-              </form>
+              {/* אופציה 2 ו-3: טפסי נעיצה / הזנקה ידנית או אוטומטית */}
+              {actionType !== 'take' && (
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  {actionType === 'update' ? (
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">בחר לפיד לנעיצה וסיום מקטע</label>
+                      <select value={targetTorchId} onChange={(e) => setTargetTorchId(e.target.value)} className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium">
+                        {activeTorches.map(t => (
+                          <option key={t.id} value={t.id}>🔥 {t.holder} ({t.id})</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">שם הלפיד / הקבוצה המזניקה</label>
+                      <input type="text" value={newTorchName} onChange={(e) => setNewTorchName(e.target.value)} placeholder="לדוגמה: צוות שומריה, משפחת רון" className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500" required />
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[11px] font-bold text-slate-400">קואורדינטות מיקום</label>
+                      <button type="button" onClick={() => handleGetLocation()} disabled={isLocating} className="text-[11px] font-bold text-amber-400 hover:text-amber-300 transition bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/20 disabled:opacity-50">
+                        {isLocating ? "🛰️ מאתר..." : "🎯 דקור מיקום נוכחי"}
+                      </button>
+                    </div>
+                    <input type="text" value={newCoords} onChange={(e) => setNewCoords(e.target.value)} placeholder="קו רוחב, קו אורך" className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono" required />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1">תיאור המקום או סימן זיהוי בשטח</label>
+                    <input type="text" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="לדוגמה: ליד האנטנה הגבוהה במוחרקה" className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500" required />
+                  </div>
+
+                  <button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black p-3 rounded-xl text-xs transition shadow-lg">
+                    {actionType === 'update' ? "נעל מקטע ונעץ לפיד בשטח 📌" : "הזנק לפיד שליחים חדש ✨"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 

@@ -1,157 +1,154 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { rtdb } from '../../lib/firebase';
+import { ref, onValue } from 'firebase/database';
+
+// שימוש בנתונים הרשמיים שהעלית מתוך תיקיית התוכן של האפליקציה
+import stationsData from '../content/stations.json';
+import routesData from '../content/routes.json';
+
+const MapComponent = dynamic(() => import('./MapComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-slate-950 rounded-xl flex items-center justify-center text-slate-400">
+      🛰️ טוען מפת חמ"ל חיה...
+    </div>
+  ),
+});
+
+interface LivePin {
+  id: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  ts: number;
+  source: 'phone' | 'sensor';
+  name?: string;
+}
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'map' | 'nfr' | 'messages'>('map');
-  
-  // שדות טופס NFR מוכנים ל-Firebase Push
-  const [stationName, setStationName] = useState('');
-  const [lat, setLat] = useState('32.6743');
-  const [lng, setLng] = useState('35.0841');
-  const [contentValue, setContentValue] = useState('');
+  const [pins, setPins] = useState<LivePin[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterSource, setFilterSource] = useState<'all' | 'phone' | 'sensor'>('all');
 
-  // נתוני ניטור מדומים עבור רצים פעילים בשטח
-  const activeRunners = [
-    { id: "runner_101", name: "קבוצת איתן", speed: "11.2 קמ\"ש", battery: "84%", lastSeen: "לפני דקה" },
-    { id: "runner_102", name: "רוני כהן (נציג קהילה)", speed: "9.5 קמ\"ש", battery: "92%", lastSeen: "לפני 3 דק׳" }
-  ];
+  useEffect(() => {
+    const liveRef = ref(rtdb, 'live');
+    
+    const unsub = onValue(liveRef, (snap) => {
+      const val = (snap.val() as Record<string, any>) || {};
+      
+      const parsedPins = Object.entries(val).map(([id, p]) => ({
+        id,
+        lat: p.lat,
+        lng: p.lng,
+        speed: p.speed,
+        ts: p.ts,
+        name: p.name,
+        // התאמה מדויקת לחוקי ה-DB שלך: אם שדה source לא קיים, מדובר בסמארטפון (phone)
+        source: p.source === 'sensor' ? 'sensor' : 'phone'
+      }));
+      
+      setPins(parsedPins);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching live pins from RTDB:", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  const filteredPins = pins.filter(pin => {
+    if (filterSource === 'all') return true;
+    return pin.source === filterSource;
+  });
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
+    <div className="w-full max-w-7xl mx-auto p-4 flex flex-col gap-4 font-sans bg-[#FEF6ED] min-h-screen">
       
-      {/* תפריט שליטה צדדי */}
-      <div className="w-full lg:w-1/4 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
-        <div className="space-y-5">
-          <div>
-            <h3 className="text-lg font-bold text-white border-r-4 border-amber-500 pr-2">חמ"ל כרמל כנרת</h3>
-            <p className="text-[11px] text-slate-400 mt-1">מערכת בקרה וניהול גיאוגרפית רשמית</p>
-          </div>
-
-          <nav className="flex flex-col gap-2">
-            <button 
-              onClick={() => setActiveTab('map')}
-              className={`w-full text-right p-3 rounded-xl text-xs font-bold transition flex items-center justify-between ${activeTab === 'map' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10' : 'bg-slate-950 hover:bg-slate-800 text-slate-300'}`}
-            >
-              <span>🛰️ מסך בקרה וניטור חי</span>
-              {activeTab === 'map' && <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>}
-            </button>
-            <button 
-              onClick={() => setActiveTab('nfr')}
-              className={`w-full text-right p-3 rounded-xl text-xs font-bold transition ${activeTab === 'nfr' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10' : 'bg-slate-950 hover:bg-slate-800 text-slate-300'}`}
-            >
-              <span>📍 ניהול נקודות ציון ומשימות (NFR)</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('messages')}
-              className={`w-full text-right p-3 rounded-xl text-xs font-bold transition ${activeTab === 'messages' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/10' : 'bg-slate-950 hover:bg-slate-800 text-slate-300'}`}
-            >
-              <span>📋 הגדרת מסרי המשכיות לבית</span>
-            </button>
-          </nav>
+      {/* כותרת החמ"ל */}
+      <div className="p-4 bg-[#2A3C2C] text-white rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-2 shadow-sm">
+        <div>
+          <h2 className="text-lg font-black tracking-wide">חמ"ל שביל כרמל-כנרת</h2>
+          <p className="text-xs text-amber-200">מסך בקרה, ניטור ואינטגרציית אותות קצה בזמן אמת</p>
         </div>
-
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex justify-between items-center mt-4">
-          <span>סנכרון ליבה (DB):</span>
-          <span className="flex items-center gap-1.5 font-bold text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> תקין
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+          <span className="text-xs font-bold uppercase bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-md">
+            {loading ? "מתחבר..." : "שידור חי אקטיבי"}
           </span>
         </div>
       </div>
 
-      {/* לוח עבודה דינמי */}
-      <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 overflow-y-auto shadow-xl">
+      {/* אזור העבודה: מפה וסיידבר בקרה */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-140px)] min-h-[500px]">
         
-        {/* טאב 1: מסך ניטור חי ומפת שליטה */}
-        {activeTab === 'map' && (
-          <div className="h-full flex flex-col space-y-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-              <div>
-                <h4 className="text-lg font-bold text-white">מפת ניטור אולטרה-מרתון בזמן אמת</h4>
-                <p className="text-xs text-slate-400">הצלבת נתוני מיקום המגיעים מאפליקציות הרצים ומערכות הקצה</p>
-              </div>
-              <span className="text-[11px] font-mono text-amber-500 bg-amber-500/5 px-2.5 py-1 rounded-md border border-amber-500/10">Live Tracker</span>
-            </div>
+        {/* המפה - מציגה את התחנות האמיתיות, תוואי ה-Waze והמשתמשים מה-RTDB */}
+        <div className="lg:col-span-3 bg-white border border-[#F0F0F0] rounded-2xl p-2 shadow-sm relative h-full">
+          <MapComponent 
+            torch={null} 
+            stations={stationsData.stations} 
+            routes={routesData.waypoints}   
+            livePins={filteredPins} 
+          />
+        </div>
 
-            {/* סימולטור מפה אינטראקטיבית */}
-            <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-500 min-h-[300px] relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(#d68c45_0.5px,transparent_0.5px)] [background-size:24px Play_24px] opacity-10"></div>
-              <span className="text-3xl mb-2">🛰️</span>
-              <p className="text-xs font-bold text-slate-400">תצוגת רשת קואורדינטות של שביל כרמל כנרת</p>
-              <p className="text-[10px] text-slate-600 mt-1">רכיב המפה המלא (Leaflet) יוטמע כאן ויציג רצים ונקודות עניין בלייב</p>
-            </div>
-
-            {/* טבלת מעקב רצים אקטיביים */}
-            <div className="space-y-3">
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-400">רצים ומנשיאי לפיד פעילים כעת:</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {activeRunners.map((runner) => (
-                  <div key={runner.id} className="bg-slate-950 border border-slate-800/80 p-4 rounded-xl flex justify-between items-center">
-                    <div className="space-y-1">
-                      <h6 className="text-sm font-bold text-white">{runner.name}</h6>
-                      <p className="text-[11px] text-slate-500">מזהה מכשיר: {runner.id} • עודכן {runner.lastSeen}</p>
-                    </div>
-                    <div className="text-left space-y-1">
-                      <span className="text-xs font-bold text-amber-400 block">{runner.speed}</span>
-                      <span className="text-[10px] text-slate-400 block">🔋 סוללה: {runner.battery}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* סיידבר ניטור וסינון */}
+        <div className="bg-white border border-[#F0F0F0] rounded-2xl p-4 shadow-sm flex flex-col gap-4 h-full overflow-hidden">
+          <div>
+            <h3 className="text-sm font-black text-[#212121] mb-1">מסנני תצוגה</h3>
+            <p className="text-[11px] text-[#646464]">בחר אילו אותות להציג על גבי המפה המרכזית</p>
           </div>
-        )}
 
-        {/* טאב 2: הגדרת משימות ונקודות עניין (NFR) */}
-        {activeTab === 'nfr' && (
-          <div className="space-y-6">
-            <div>
-              <h4 className="text-lg font-bold text-white">הזנת נקודת ציון ומשימה בשטח (NFR)</h4>
-              <p className="text-xs text-slate-400 mt-1">יצירת נקודת תוכן חדשה על גבי תוואי השביל שתשמר ישירות ב-Firebase Database</p>
-            </div>
+          <div className="grid grid-cols-3 gap-1 bg-[#FEF6ED] p-1 rounded-xl border border-[#F0F0F0] text-[11px] font-bold">
+            <button onClick={() => setFilterSource('all')} className={`py-2 rounded-lg transition-all ${filterSource === 'all' ? 'bg-[#2C6E49] text-white shadow' : 'text-[#646464]'}`}>
+              הכל ({pins.length})
+            </button>
+            <button onClick={() => setFilterSource('phone')} className={`py-2 rounded-lg transition-all ${filterSource === 'phone' ? 'bg-blue-600 text-white shadow' : 'text-[#646464]'}`}>
+              📱 סלולר
+            </button>
+            <button onClick={() => setFilterSource('sensor')} className={`py-2 rounded-lg transition-all ${filterSource === 'sensor' ? 'bg-purple-600 text-white shadow' : 'text-[#646464]'}`}>
+              👕 IoT
+            </button>
+          </div>
 
-            <form onSubmit={(e) => e.preventDefault()} className="bg-slate-950 p-6 rounded-xl border border-slate-800 max-w-xl space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">קו רוחב (Latitude)</label>
-                  <input type="text" value={lat} onChange={(e) => setLat(e.target.value)} className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono" />
+          <hr className="border-[#F0F0F0]" />
+
+          {/* רשימת האותות שנקלטו */}
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            <h4 className="text-[11px] font-bold text-[#646464] sticky top-0 bg-white pb-1">מכשירים משדרים בשטח ({filteredPins.length})</h4>
+            
+            {filteredPins.map((pin) => (
+              <div key={pin.id} className="p-2.5 rounded-xl border border-[#F0F0F0] bg-slate-50 flex justify-between items-center text-xs hover:border-[#D68C45] transition-all">
+                <div className="space-y-0.5">
+                  <span className="font-bold text-[#212121] block truncate max-w-[140px]">
+                    {pin.source === 'sensor' ? `חיישן חולצה #${pin.id}` : (pin.name || 'צועד אנונימי')}
+                  </span>
+                  <span className="text-[10px] text-[#646464] block">
+                    {new Date(pin.ts).toLocaleTimeString('he-IL')}
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">קו אורך (Longitude)</label>
-                  <input type="text" value={lng} onChange={(e) => setLng(e.target.value)} className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono" />
+
+                <div className="text-left space-y-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded block ${pin.source === 'sensor' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {pin.source === 'sensor' ? 'IoT' : 'סלולר'}
+                  </span>
+                  {pin.speed !== undefined && pin.speed > 0 && (
+                    <span className="text-[10px] font-mono font-medium text-[#2C6E49] block">
+                      {pin.speed.toFixed(1)} קמ"ש
+                    </span>
+                  )}
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">שם הנקודה / התחנה בשביל</label>
-                <input type="text" value={stationName} onChange={(e) => setStationName(e.target.value)} placeholder="לדוגמה: תצפית המוחרקה, נחל קישון" className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500" />
-              </div>
+            ))}
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">תוכן המשימה / מדריך ערכים דיגיטלי</label>
-                <textarea rows={3} value={contentValue} onChange={(e) => setContentValue(e.target.value)} placeholder="כתוב את שאלת השיח או המשימה הקהילתית עבור המטיילים המגיעים לרדיוס התחנה..." className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none" />
-              </div>
-
-              <button type="button" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black p-3 rounded-lg text-xs transition uppercase tracking-wide">
-                שמור והפץ נקודה למערכת המרכזית 🚀
-              </button>
-            </form>
+            {filteredPins.length === 0 && (
+              <p className="text-xs text-[#646464] italic text-center py-8">אין אותות תואמים זמינים בשטח כעת.</p>
+            )}
           </div>
-        )}
-
-        {/* טאב 3: חוקיות מסרי המשכיות לבית */}
-        {activeTab === 'messages' && (
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-lg font-bold text-white">ניהול מסרי המשכיות ועשייה בבית</h4>
-              <p className="text-xs text-slate-400 mt-1">קישור משימות ההתנדבות וההשראה הקהילתיות לתחנות השביל השונות</p>
-            </div>
-            <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 max-w-xl text-center space-y-2">
-              <p className="text-xs text-slate-400">כאן נגדיר את השדות שישמרו בתוך האוסף `take_home_messages` ב-Cloud Firestore.</p>
-              <p className="text-[11px] text-slate-600 font-mono">הטבלאות והקישורים מוכנים לקריאת נתוני ה-Firebase לכשתסופק.</p>
-            </div>
-          </div>
-        )}
+        </div>
 
       </div>
     </div>
