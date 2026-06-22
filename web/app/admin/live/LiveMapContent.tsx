@@ -55,7 +55,12 @@ export default function LiveMapContent() {
   const { users } = useUsers();
   const [selectedPin, setSelectedPin] = useState<LivePin | null>(null);
 
-  const phones = pins.filter((p) => p.source === "phone").length;
+  const [showHikers, setShowHikers] = useState(true);
+  const [showSensors, setShowSensors] = useState(true);
+  const [showStations, setShowStations] = useState(true);
+  const [showTorch, setShowTorch] = useState(true);
+
+  const phones = pins.filter((p) => p.source !== "sensor").length;
   const sensors = pins.filter((p) => p.source === "sensor").length;
 
   const routeCoords: [number, number][] = routes.waypoints.map((w) => [
@@ -75,7 +80,47 @@ export default function LiveMapContent() {
         </p>
       </div>
 
-      <div className="map-container" style={{ height: "calc(100vh - 200px)" }}>
+      <div className="map-container" style={{ height: "calc(100vh - 200px)", position: "relative" }}>
+        {/* Filter overlay */}
+        <div style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 1000,
+          background: "rgba(26, 26, 26, 0.9)",
+          backdropFilter: "blur(8px)",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
+          padding: "12px",
+          borderRadius: "8px",
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          minWidth: "130px",
+          direction: "rtl",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+        }}>
+          <div style={{ fontWeight: 800, fontSize: "0.8125rem", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 6, marginBottom: 4 }}>
+            🗺️ סינון מפה
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showHikers} onChange={(e) => setShowHikers(e.target.checked)} />
+            מטיילים (📱)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showSensors} onChange={(e) => setShowSensors(e.target.checked)} />
+            חיישנים (📡)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showStations} onChange={(e) => setShowStations(e.target.checked)} />
+            תחנות (📍)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
+            <input type="checkbox" checked={showTorch} onChange={(e) => setShowTorch(e.target.checked)} />
+            לפיד (🔥)
+          </label>
+        </div>
+
         <MapContainer
           center={INITIAL_CENTER}
           zoom={INITIAL_ZOOM}
@@ -98,7 +143,7 @@ export default function LiveMapContent() {
           />
 
           {/* Station markers */}
-          {stations.map((s) => {
+          {showStations && stations.map((s) => {
             const v = valueTheme[s.value];
             return (
               <Marker
@@ -142,7 +187,11 @@ export default function LiveMapContent() {
 
           {/* Live pins */}
           {pins.map((p) => {
-            const userProfile = p.source === "phone" ? users.find((u) => u.uid === p.id) : null;
+            const isSensor = p.source === "sensor";
+            if (isSensor && !showSensors) return null;
+            if (!isSensor && !showHikers) return null;
+
+            const userProfile = !isSensor ? users.find((u) => u.uid === p.id) : null;
             return (
               <CircleMarker
                 key={p.id}
@@ -150,7 +199,7 @@ export default function LiveMapContent() {
                 radius={6}
                 pathOptions={{
                   fillColor:
-                    p.source === "sensor" ? colors.sky : colors.forest,
+                    isSensor ? colors.sky : colors.forest,
                   fillOpacity: 0.9,
                   color: "#fff",
                   weight: 2,
@@ -180,13 +229,13 @@ export default function LiveMapContent() {
                     <span
                       style={{
                         color:
-                          p.source === "sensor"
+                          isSensor
                             ? colors.sky
                             : colors.forest,
                         fontWeight: 700,
                       }}
                     >
-                      {p.source === "sensor" ? "חיישן IoT" : "מטייל/ת"}
+                      {isSensor ? "חיישן IoT" : "מטייל/ת"}
                     </span>
                     {p.speed != null && (
                       <>
@@ -201,7 +250,7 @@ export default function LiveMapContent() {
           })}
 
           {/* Torch marker */}
-          {torch && (
+          {showTorch && torch && (
             <Marker position={[torch.lat, torch.lng]} icon={torchIcon}>
               <Popup>
                 <div style={{ textAlign: "right" }}>
