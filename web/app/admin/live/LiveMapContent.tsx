@@ -36,46 +36,48 @@ import type { LivePin } from "@/lib/hooks/useLive";
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 const INITIAL_ZOOM = 10;
 
-function createIcon(color: string, size: number = 10) {
+const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>`;
+const sensorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>`;
+const stationSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+const missionSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`;
+const alertSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 6.5 19 6"/><path d="M12 2h1"/><path d="M5.5 6.5 5 6"/><path d="M2 12h1"/></svg>`;
+const torchSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`;
+
+function createMapIcon(svgMarkup: string, backgroundColor: string, size: number = 24) {
   return L.divIcon({
     className: "",
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
+    html: `
+      <div style="
+        width: ${size}px;
+        height: ${size}px;
+        border-radius: 50%;
+        background: ${backgroundColor};
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+      ">
+        ${svgMarkup}
+      </div>
+    `,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
 }
 
 function createStationIcon(color: string) {
-  return L.divIcon({
-    className: "",
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
+  return createMapIcon(stationSvg, color, 24);
 }
 
-const torchIcon = L.divIcon({
-  className: "",
-  html: `<div style="display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+const torchIcon = createMapIcon(torchSvg, "var(--c-gold)", 28);
 
 function createMissionIcon(active: boolean) {
-  return L.divIcon({
-    className: "",
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${active ? colors.terracotta : "#999"};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
+  return createMapIcon(missionSvg, active ? colors.terracotta : "#999", 24);
 }
 
-const alertIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:${colors.danger};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-});
+const alertIcon = createMapIcon(alertSvg, colors.danger, 24);
 
 export default function LiveMapContent() {
   const pins = useLive();
@@ -246,17 +248,14 @@ export default function LiveMapContent() {
 
             const userProfile = !isSensor ? users.find((u) => u.uid === p.id) : null;
             return (
-              <CircleMarker
+              <Marker
                 key={p.id}
-                center={[p.lat, p.lng]}
-                radius={6}
-                pathOptions={{
-                  fillColor:
-                    isSensor ? colors.sky : colors.forest,
-                  fillOpacity: 0.9,
-                  color: "#fff",
-                  weight: 2,
-                }}
+                position={[p.lat, p.lng]}
+                icon={createMapIcon(
+                  isSensor ? sensorSvg : phoneSvg,
+                  isSensor ? colors.sky : colors.forest,
+                  24
+                )}
                 eventHandlers={{
                   click: () => setSelectedPin(p),
                 }}
@@ -308,7 +307,7 @@ export default function LiveMapContent() {
                     )}
                   </div>
                 </Popup>
-              </CircleMarker>
+              </Marker>
             );
           })}
 
@@ -404,71 +403,110 @@ export default function LiveMapContent() {
           flexWrap: "wrap",
           padding: "var(--sp-md) var(--sp-lg)",
           fontSize: "0.8125rem",
+          direction: "rtl",
+          alignItems: "center",
         }}
       >
-        <span>
-          <span
-            style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: colors.forest,
-              marginLeft: 4,
-            }}
-          />{" "}
+        <span style={{ fontWeight: 700, marginLeft: "var(--sp-xs)", display: "flex", alignItems: "center", gap: 6 }}>
+          <LuMap size={14} /> מקרא מפה:
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: colors.forest,
+            color: "#fff",
+          }}>
+            <LuSmartphone size={12} />
+          </span>{" "}
           מטיילים
         </span>
-        <span>
-          <span
-            style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: colors.sky,
-              marginLeft: 4,
-            }}
-          />{" "}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: colors.sky,
+            color: "#fff",
+          }}>
+            <LuRadio size={12} />
+          </span>{" "}
           חיישנים
         </span>
-        <span>
-          <span
-            style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: colors.terracotta,
-              marginLeft: 4,
-            }}
-          />{" "}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: colors.forest,
+            color: "#fff",
+          }}>
+            <LuMapPin size={12} />
+          </span>{" "}
+          תחנות
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: colors.terracotta,
+            color: "#fff",
+          }}>
+            <LuClipboardList size={12} />
+          </span>{" "}
           משימות NFR
         </span>
-        <span>
-          <span
-            style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              background: colors.danger,
-              marginLeft: 4,
-            }}
-          />{" "}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: colors.danger,
+            color: "#fff",
+          }}>
+            <LuSiren size={12} />
+          </span>{" "}
           התראות GPS
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <LuFlame size={14} style={{ color: "var(--c-gold)" }} /> לפיד
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            background: "var(--c-gold)",
+            color: "#fff",
+          }}>
+            <LuFlame size={12} />
+          </span>{" "}
+          לפיד
         </span>
-        <span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <span
             style={{
               display: "inline-block",
-              width: 8,
+              width: 16,
               height: 4,
               background: colors.terracotta,
-              marginLeft: 4,
               borderRadius: 2,
             }}
           />{" "}
