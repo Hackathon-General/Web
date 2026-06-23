@@ -21,7 +21,7 @@ export interface FeedPost {
   value?: string;
   text?: string;
   imageUrl?: string;
-  createdAt?: any;
+  createdAt?: number;
 }
 
 /** Live community feed (bounded query). */
@@ -35,21 +35,14 @@ export function useFeed(max = 100) {
       orderBy("createdAt", "desc"),
       limit(max)
     );
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setPosts(
-          snap.docs.map(
-            (d) => ({ id: d.id, ...(d.data() as object) }) as FeedPost
-          )
-        );
-        setLoading(false);
-      },
-      (err) => {
-        console.error("useFeed query failed:", err);
-        setLoading(false);
-      }
-    );
+    const unsub = onSnapshot(q, (snap) => {
+      setPosts(
+        snap.docs.map(
+          (d) => ({ id: d.id, ...(d.data() as object) }) as FeedPost
+        )
+      );
+      setLoading(false);
+    });
     return () => unsub();
   }, [max]);
 

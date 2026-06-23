@@ -28,26 +28,8 @@ export default function FeedPage() {
     setDeleteId(null);
   };
 
-  const formatDate = (ts?: any) => {
+  const formatDate = (ts?: number) => {
     if (!ts) return "—";
-    if (typeof ts.toDate === "function") {
-      return ts.toDate().toLocaleString("he-IL", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-    if (ts.seconds !== undefined) {
-      return new Date(ts.seconds * 1000).toLocaleString("he-IL", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
     return new Date(ts).toLocaleString("he-IL", {
       day: "2-digit",
       month: "2-digit",

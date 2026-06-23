@@ -16,7 +16,6 @@ import { useTorch } from "@/lib/hooks/useTorch";
 import { useUsers } from "@/lib/hooks/useUsers";
 import { useMissions } from "@/lib/hooks/useMissions";
 import { useAlerts } from "@/lib/hooks/useAlerts";
-import { useFeed } from "@/lib/hooks/useFeed";
 import {
   LuMap,
   LuSmartphone,
@@ -25,8 +24,6 @@ import {
   LuClipboardList,
   LuSiren,
   LuFlame,
-  LuNewspaper,
-  LuUser,
 } from "react-icons/lu";
 import {
   stations,
@@ -45,28 +42,6 @@ const stationSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="1
 const missionSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>`;
 const alertSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 6.5 19 6"/><path d="M12 2h1"/><path d="M5.5 6.5 5 6"/><path d="M2 12h1"/></svg>`;
 const torchSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`;
-const newspaperSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>`;
-
-function getJitteredCoords(lat: number, lng: number, seed: string): [number, number] {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const offsetLat = ((Math.abs(hash) % 1000) / 1000 - 0.5) * 0.0016;
-  const offsetLng = ((Math.abs(hash >> 8) % 1000) / 1000 - 0.5) * 0.0016;
-  return [lat + offsetLat, lng + offsetLng];
-}
-
-function formatPostDate(ts?: any) {
-  if (!ts) return "—";
-  if (typeof ts.toDate === "function") {
-    return ts.toDate().toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  }
-  if (ts.seconds !== undefined) {
-    return new Date(ts.seconds * 1000).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  }
-  return new Date(ts).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
 
 function createMapIcon(svgMarkup: string, backgroundColor: string, size: number = 24) {
   return L.divIcon({
@@ -103,7 +78,6 @@ function createMissionIcon(active: boolean) {
 }
 
 const alertIcon = createMapIcon(alertSvg, colors.danger, 24);
-const newspaperIcon = createMapIcon(newspaperSvg, "#9333ea", 24);
 
 export default function LiveMapContent() {
   const pins = useLive();
@@ -111,7 +85,6 @@ export default function LiveMapContent() {
   const { users } = useUsers();
   const { missions } = useMissions();
   const { alerts } = useAlerts();
-  const { posts } = useFeed(200);
   const [selectedPin, setSelectedPin] = useState<LivePin | null>(null);
 
   const [showHikers, setShowHikers] = useState(true);
@@ -120,7 +93,6 @@ export default function LiveMapContent() {
   const [showTorch, setShowTorch] = useState(true);
   const [showMissions, setShowMissions] = useState(true);
   const [showAlerts, setShowAlerts] = useState(true);
-  const [showPosts, setShowPosts] = useState(true);
 
   const phones = pins.filter((p) => p.source !== "sensor").length;
   const sensors = pins.filter((p) => p.source === "sensor").length;
@@ -144,8 +116,6 @@ export default function LiveMapContent() {
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuClipboardList size={16} /> {missions.filter(m => m.active).length} משימות</span>
           <span>·</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuSiren size={16} /> {alerts.length} התראות</span>
-          <span>·</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuNewspaper size={16} /> {posts.length} פוסטים</span>
           {torch && (
             <>
               <span>·</span>
@@ -203,10 +173,6 @@ export default function LiveMapContent() {
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showTorch} onChange={(e) => setShowTorch(e.target.checked)} />
             <LuFlame size={14} /> לפיד
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
-            <input type="checkbox" checked={showPosts} onChange={(e) => setShowPosts(e.target.checked)} />
-            <LuNewspaper size={14} /> פוסטים
           </label>
         </div>
 
@@ -424,114 +390,6 @@ export default function LiveMapContent() {
               />
             </Fragment>
           ))}
-
-          {/* Post markers */}
-          {showPosts && posts.map((post) => {
-            if (!post.stationId) return null;
-            const station = stations.find((s) => s.id === post.stationId);
-            if (!station) return null;
-
-            const jitteredCoords = getJitteredCoords(station.lat, station.lng, post.id);
-
-            return (
-              <Marker
-                key={post.id}
-                position={jitteredCoords}
-                icon={newspaperIcon}
-              >
-                <Popup>
-                  <div style={{ textAlign: "right", direction: "rtl", minWidth: 200, maxWidth: 250 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        direction: "ltr",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 8,
-                        borderBottom: "1px solid #f0f0f0",
-                        paddingBottom: 6,
-                      }}
-                    >
-                      <div style={{ textAlign: "right" }}>
-                        <strong style={{ fontSize: "0.875rem", display: "block" }}>{post.authorName ?? "אנונימי"}</strong>
-                        <span style={{ fontSize: "0.6875rem", color: "#888" }}>
-                          {formatPostDate(post.createdAt)}
-                        </span>
-                      </div>
-                      {post.authorPhoto ? (
-                        <img
-                          src={post.authorPhoto}
-                          alt=""
-                          referrerPolicy="no-referrer"
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            background: "#eee",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#888",
-                          }}
-                        >
-                          <LuUser size={16} />
-                        </div>
-                      )}
-                    </div>
-                    {post.value && (
-                      <div
-                        style={{
-                          display: "inline-block",
-                          padding: "2px 8px",
-                          borderRadius: 999,
-                          background: "rgba(147, 51, 234, 0.1)",
-                          color: "#9333ea",
-                          fontSize: "0.6875rem",
-                          fontWeight: 700,
-                          marginBottom: 6,
-                        }}
-                      >
-                        {post.value}
-                      </div>
-                    )}
-                    {post.text && (
-                      <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#333", lineHeight: 1.4 }}>
-                        {post.text}
-                      </p>
-                    )}
-                    {post.imageUrl && (
-                      <img
-                        src={post.imageUrl}
-                        alt="feed"
-                        referrerPolicy="no-referrer"
-                        style={{
-                          width: "100%",
-                          maxHeight: 120,
-                          objectFit: "cover",
-                          borderRadius: 4,
-                          marginTop: 6,
-                        }}
-                      />
-                    )}
-                    <div style={{ marginTop: 6, fontSize: "0.6875rem", color: "var(--c-muted)" }}>
-                      תחנה: {station.name}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
         </MapContainer>
       </div>
 
@@ -641,21 +499,6 @@ export default function LiveMapContent() {
             <LuFlame size={12} />
           </span>{" "}
           לפיד
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 24,
-            height: 24,
-            borderRadius: "50%",
-            background: "#9333ea",
-            color: "#fff",
-          }}>
-            <LuNewspaper size={12} />
-          </span>{" "}
-          פוסטים
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
           <span
