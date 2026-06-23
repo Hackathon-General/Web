@@ -1,6 +1,7 @@
 "use client";
 
 import { useLeaderboard } from "@/lib/hooks/useLeaderboard";
+import { LuTrophy, LuUser } from "react-icons/lu";
 
 export default function LeaderboardPage() {
   const { rows, communityKm } = useLeaderboard(50);
@@ -8,7 +9,10 @@ export default function LeaderboardPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">🏆 טבלת מובילים</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuTrophy />
+          טבלת מובילים
+        </h1>
         <p className="page-subtitle">
           דירוג המטיילים לפי קילומטרים שנצברו
         </p>
@@ -49,7 +53,9 @@ export default function LeaderboardPage() {
       <div className="card">
         {rows.length === 0 ? (
           <div className="empty-state">
-            <div className="icon">🏆</div>
+            <div className="icon" style={{ display: "flex", justifyContent: "center" }}>
+              <LuTrophy size={48} />
+            </div>
             <div className="title">אין נתונים עדיין</div>
             <div className="desc">
               נתוני מטיילים יופיעו כאן כשמטיילים ישתמשו באפליקציה
@@ -122,7 +128,7 @@ export default function LeaderboardPage() {
                             color: "var(--c-muted)",
                           }}
                         >
-                          👤
+                          <LuUser size={16} />
                         </div>
                       )}
                       <span style={{ fontWeight: 600 }}>

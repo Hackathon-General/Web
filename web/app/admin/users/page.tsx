@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useUsers } from "@/lib/hooks/useUsers";
+import { LuUsers, LuKey, LuGhost, LuSearch } from "react-icons/lu";
 
 export default function UsersPage() {
   const { users, loading } = useUsers();
@@ -28,7 +29,10 @@ export default function UsersPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">👥 ניהול משתמשים</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuUsers />
+          ניהול משתמשים
+        </h1>
         <p className="page-subtitle">
           סה״כ {users.length} משתמשים · {admins} מנהלים · {anonymous} אנונימיים
         </p>
@@ -37,25 +41,33 @@ export default function UsersPage() {
       {/* Stats */}
       <div className="stats-grid" style={{ marginBottom: "var(--sp-lg)" }}>
         <div className="stat-card forest">
-          <div className="stat-icon">👥</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuUsers size={24} />
+          </div>
           <div className="stat-value">{users.length}</div>
           <div className="stat-label">סה״כ משתמשים</div>
         </div>
         <div className="stat-card terracotta">
-          <div className="stat-icon">🔑</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuKey size={24} />
+          </div>
           <div className="stat-value">{admins}</div>
           <div className="stat-label">מנהלים</div>
         </div>
         <div className="stat-card sky">
-          <div className="stat-icon">👻</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuGhost size={24} />
+          </div>
           <div className="stat-value">{anonymous}</div>
           <div className="stat-label">אנונימיים</div>
         </div>
       </div>
 
       {/* Search */}
-      <div className="search-bar">
-        <span className="icon">🔍</span>
+      <div className="search-bar" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <span className="icon" style={{ position: "absolute", right: 16, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+          <LuSearch size={16} />
+        </span>
         <input
           className="input"
           placeholder="חיפוש לפי שם / אימייל / UID..."
@@ -73,7 +85,9 @@ export default function UsersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="icon">👥</div>
+            <div className="icon" style={{ display: "flex", justifyContent: "center" }}>
+              <LuUsers size={48} />
+            </div>
             <div className="title">
               {searchQuery ? "אין תוצאות" : "אין משתמשים עדיין"}
             </div>

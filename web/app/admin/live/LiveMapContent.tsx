@@ -17,6 +17,15 @@ import { useUsers } from "@/lib/hooks/useUsers";
 import { useMissions } from "@/lib/hooks/useMissions";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import {
+  LuMap,
+  LuSmartphone,
+  LuRadio,
+  LuMapPin,
+  LuClipboardList,
+  LuSiren,
+  LuFlame,
+} from "react-icons/lu";
+import {
   stations,
   routes,
   valueTheme,
@@ -47,7 +56,7 @@ function createStationIcon(color: string) {
 
 const torchIcon = L.divIcon({
   className: "",
-  html: `<div style="font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));">🔥</div>`,
+  html: `<div style="display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div>`,
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
@@ -94,12 +103,25 @@ export default function LiveMapContent() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">🗺️ מפה חיה — God Mode</h1>
-        <p className="page-subtitle">
-          📱 {phones} מטיילים · 📡 {sensors} חיישנים · 📋 {missions.filter(m => m.active).length} משימות · 🚨 {alerts.length} התראות
-          {torch
-            ? ` · 🔥 לפיד ${torch.status === "held" ? "נישא" : "ממתין"}`
-            : ""}
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuMap /> מפה חיה — God Mode
+        </h1>
+        <p className="page-subtitle" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuSmartphone size={16} /> {phones} מטיילים</span>
+          <span>·</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuRadio size={16} /> {sensors} חיישנים</span>
+          <span>·</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuClipboardList size={16} /> {missions.filter(m => m.active).length} משימות</span>
+          <span>·</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><LuSiren size={16} /> {alerts.length} התראות</span>
+          {torch && (
+            <>
+              <span>·</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <LuFlame size={16} style={{ color: "var(--c-gold)" }} /> לפיד {torch.status === "held" ? "נישא" : "ממתין"}
+              </span>
+            </>
+          )}
         </p>
       </div>
 
@@ -123,32 +145,32 @@ export default function LiveMapContent() {
           direction: "rtl",
           boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
         }}>
-          <div style={{ fontWeight: 800, fontSize: "0.8125rem", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 6, marginBottom: 4 }}>
-            🗺️ סינון מפה
+          <div style={{ fontWeight: 800, fontSize: "0.8125rem", borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 6, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <LuMap size={14} /> סינון מפה
           </div>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showHikers} onChange={(e) => setShowHikers(e.target.checked)} />
-            מטיילים (📱)
+            <LuSmartphone size={14} /> מטיילים
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showSensors} onChange={(e) => setShowSensors(e.target.checked)} />
-            חיישנים (📡)
+            <LuRadio size={14} /> חיישנים
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showStations} onChange={(e) => setShowStations(e.target.checked)} />
-            תחנות (📍)
+            <LuMapPin size={14} /> תחנות
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showMissions} onChange={(e) => setShowMissions(e.target.checked)} />
-            משימות (📋)
+            <LuClipboardList size={14} /> משימות
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showAlerts} onChange={(e) => setShowAlerts(e.target.checked)} />
-            התראות (🚨)
+            <LuSiren size={14} /> התראות
           </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.75rem", cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showTorch} onChange={(e) => setShowTorch(e.target.checked)} />
-            לפיד (🔥)
+            <LuFlame size={14} /> לפיד
           </label>
         </div>
 
@@ -294,10 +316,13 @@ export default function LiveMapContent() {
           {showTorch && torch && (
             <Marker position={[torch.lat, torch.lng]} icon={torchIcon}>
               <Popup>
-                <div style={{ textAlign: "right" }}>
-                  <strong>🔥 לפיד</strong>
-                  <br />
-                  {torch.holderName ?? "ממתין בשביל"}
+                <div style={{ textAlign: "right", direction: "rtl" }}>
+                  <strong style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.9375rem" }}>
+                    <LuFlame style={{ color: "var(--c-gold)" }} /> לפיד
+                  </strong>
+                  <span style={{ fontSize: "0.8125rem", color: "#555" }}>
+                    {torch.holderName ?? "ממתין בשביל"}
+                  </span>
                 </div>
               </Popup>
             </Marker>
@@ -312,7 +337,9 @@ export default function LiveMapContent() {
               >
                 <Popup>
                   <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
-                    <strong style={{ fontSize: "0.9375rem", display: "block" }}>📋 {nfr.title}</strong>
+                    <strong style={{ fontSize: "0.9375rem", display: "flex", alignItems: "center", gap: 6 }}>
+                      <LuClipboardList size={16} /> {nfr.title}
+                    </strong>
                     {nfr.task && <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{nfr.task}</p>}
                     <span style={{ fontSize: "0.75rem", fontWeight: 700, color: nfr.active ? colors.terracotta : "#999" }}>
                       {nfr.active ? "● משימה פעילה" : "○ משימה כבויה"}
@@ -342,7 +369,9 @@ export default function LiveMapContent() {
               >
                 <Popup>
                   <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
-                    <strong style={{ fontSize: "0.9375rem", display: "block" }}>🚨 {a.title}</strong>
+                    <strong style={{ fontSize: "0.9375rem", display: "flex", alignItems: "center", gap: 6 }}>
+                      <LuSiren size={16} style={{ color: colors.danger }} /> {a.title}
+                    </strong>
                     <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{a.message}</p>
                     <span style={{ fontSize: "0.6875rem", color: "#888" }}>
                       {new Date(a.createdAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
@@ -429,7 +458,9 @@ export default function LiveMapContent() {
           />{" "}
           התראות GPS
         </span>
-        <span>🔥 לפיד</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <LuFlame size={14} style={{ color: "var(--c-gold)" }} /> לפיד
+        </span>
         <span>
           <span
             style={{

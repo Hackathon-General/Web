@@ -21,6 +21,7 @@ import { db } from "@/lib/firebase";
 import { colors } from "@/lib/content";
 import { useAlerts } from "@/lib/hooks/useAlerts";
 import type { AlertDoc } from "@/lib/hooks/useAlerts";
+import { LuSiren, LuLock, LuTrash2 } from "react-icons/lu";
 
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 
@@ -84,7 +85,10 @@ export default function AlertsContent() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">🚨 שיגור התראות GPS</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuSiren />
+          שיגור התראות GPS
+        </h1>
         <p className="page-subtitle">
           שלח התראה למטיילים ברדיוס מוגדר על המפה
         </p>
@@ -136,7 +140,9 @@ export default function AlertsContent() {
                   >
                     <Popup>
                       <div style={{ textAlign: "right", direction: "rtl", minWidth: 150 }}>
-                        <strong style={{ fontSize: "0.9375rem", display: "block" }}>🚨 {a.title}</strong>
+                        <strong style={{ fontSize: "0.9375rem", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <LuSiren size={14} /> {a.title}
+                        </strong>
                         <p style={{ margin: "4px 0", fontSize: "0.8125rem", color: "#555" }}>{a.message}</p>
                         <span style={{ fontSize: "0.6875rem", color: "#888" }}>
                           {new Date(a.createdAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
@@ -204,16 +210,23 @@ export default function AlertsContent() {
               </div>
               <button
                 className="btn btn-danger btn-pill"
-                style={{ width: "100%" }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}
                 onClick={fire}
                 disabled={!point || !message || saving}
               >
-                {saving ? "שולח..." : "🚨 שגר התראה"}
+                {saving ? "שולח..." : (
+                  <>
+                    <LuSiren size={16} />
+                    שגר התראה
+                  </>
+                )}
               </button>
             </div>
           ) : (
             <div className="card" style={{ textAlign: "center", padding: "var(--sp-lg)" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)" }}>🔒</div>
+              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)", display: "flex", justifyContent: "center" }}>
+                <LuLock />
+              </div>
               <strong style={{ display: "block", marginBottom: 4 }}>מצב צפייה בלבד</strong>
               <p style={{ fontSize: "0.8125rem", color: "var(--c-muted)", margin: 0 }}>
                 אין לך הרשאות לשגר או למחוק התראות.
@@ -230,7 +243,9 @@ export default function AlertsContent() {
 
           {alerts.length === 0 ? (
             <div className="empty-state">
-              <div className="icon">🚨</div>
+              <div className="icon" style={{ display: "flex", justifyContent: "center" }}>
+                <LuSiren size={48} />
+              </div>
               <div className="title">אין התראות</div>
               <div className="desc">
                 לחץ על המפה ומלא את הטופס לשיגור התראה
@@ -288,9 +303,11 @@ export default function AlertsContent() {
                   {isAdmin && (
                     <button
                       className="btn btn-ghost btn-sm"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                       onClick={() => setDeleteId(a.id)}
                     >
-                      🗑️ מחק
+                      <LuTrash2 size={14} />
+                      מחק
                     </button>
                   )}
                 </div>

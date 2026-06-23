@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFeed, deleteFeedPost } from "@/lib/hooks/useFeed";
 import { useAuth } from "@/lib/AuthProvider";
+import { LuNewspaper, LuSearch, LuUser, LuTrash2 } from "react-icons/lu";
 
 export default function FeedPage() {
   const { role } = useAuth();
@@ -41,15 +42,20 @@ export default function FeedPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">📰 ניהול פיד קהילתי</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuNewspaper />
+          ניהול פיד קהילתי
+        </h1>
         <p className="page-subtitle">
           צפייה ומודרציה של פוסטים מהקהילה — {posts.length} פוסטים
         </p>
       </div>
 
       {/* Search */}
-      <div className="search-bar">
-        <span className="icon">🔍</span>
+      <div className="search-bar" style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        <span className="icon" style={{ position: "absolute", right: 16, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+          <LuSearch size={16} />
+        </span>
         <input
           className="input"
           placeholder="חיפוש לפי שם / תוכן..."
@@ -67,7 +73,9 @@ export default function FeedPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="icon">📰</div>
+            <div className="icon" style={{ display: "flex", justifyContent: "center" }}>
+              <LuNewspaper size={48} />
+            </div>
             <div className="title">
               {searchQuery ? "אין תוצאות" : "אין פוסטים עדיין"}
             </div>
@@ -88,7 +96,7 @@ export default function FeedPage() {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  "👤"
+                  <LuUser size={24} style={{ color: "var(--c-muted)" }} />
                 )}
               </div>
               <div className="feed-body">
@@ -121,10 +129,11 @@ export default function FeedPage() {
                 {isAdmin && (
                   <button
                     className="btn btn-ghost btn-sm"
-                    style={{ marginTop: 8 }}
+                    style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}
                     onClick={() => setDeleteId(p.id)}
                   >
-                    🗑️ מחק פוסט
+                    <LuTrash2 size={14} />
+                    מחק פוסט
                   </button>
                 )}
               </div>

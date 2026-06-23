@@ -1,6 +1,7 @@
 "use client";
 
 import { stations, valueTheme, content } from "@/lib/content";
+import { LuMapPin, LuWaves, LuMountain, LuPhone, LuTicket } from "react-icons/lu";
 
 export default function StationsPage() {
   const westStations = stations.filter((s) => s.region === "west");
@@ -16,7 +17,10 @@ export default function StationsPage() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">📍 תחנות השביל</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuMapPin />
+          תחנות השביל
+        </h1>
         <p className="page-subtitle">
           13 תחנות התנדבות לאורך שביל כרמל-כנרת
         </p>
@@ -29,9 +33,13 @@ export default function StationsPage() {
           fontWeight: 800,
           color: "var(--c-ink)",
           marginBottom: "var(--sp-md)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        🌊 איזור מערבי ({westStations.length} תחנות)
+        <LuWaves style={{ color: "var(--c-sky)" }} />
+        איזור מערבי ({westStations.length} תחנות)
       </h2>
       <div
         style={{
@@ -53,9 +61,13 @@ export default function StationsPage() {
           fontWeight: 800,
           color: "var(--c-ink)",
           marginBottom: "var(--sp-md)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        🏔️ איזור מזרחי ({eastStations.length} תחנות)
+        <LuMountain style={{ color: "var(--c-forest)" }} />
+        איזור מזרחי ({eastStations.length} תחנות)
       </h2>
       <div
         style={{
@@ -173,17 +185,18 @@ function StationCard({ station }: { station: (typeof stations)[number] }) {
           fontSize: "0.75rem",
           color: "var(--c-muted)",
           flexWrap: "wrap",
+          alignItems: "center",
         }}
       >
-        <span>
-          📍 {station.locationText}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <LuMapPin size={14} /> {station.locationText}
         </span>
-        <span>
-          📞 {station.contactName}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <LuPhone size={14} /> {station.contactName}
           {station.contactPhone ? ` — ${station.contactPhone}` : ""}
         </span>
-        <span>
-          🎫 {content.ui.stationFields.paid}: {paidLabel}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <LuTicket size={14} /> {content.ui.stationFields.paid}: {paidLabel}
         </span>
         {station.needsBooking && (
           <span className="badge badge-admin">דורש תיאום מראש</span>

@@ -4,17 +4,29 @@ import React, { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthProvider";
+import {
+  LuLayoutDashboard,
+  LuMap,
+  LuClipboardList,
+  LuSiren,
+  LuTrophy,
+  LuNewspaper,
+  LuUsers,
+  LuMapPin,
+  LuBookOpen,
+  LuLogOut,
+} from "react-icons/lu";
 
 const navItems = [
-  { href: "/admin", label: "לוח בקרה", icon: "📊" },
-  { href: "/admin/live", label: "מפה חיה", icon: "🗺️" },
-  { href: "/admin/missions", label: "משימות NFR", icon: "📋" },
-  { href: "/admin/alerts", label: "התראות", icon: "🚨" },
-  { href: "/admin/leaderboard", label: "טבלת מובילים", icon: "🏆" },
-  { href: "/admin/feed", label: "פיד קהילתי", icon: "📰" },
-  { href: "/admin/users", label: "משתמשים", icon: "👥" },
-  { href: "/admin/stations", label: "תחנות", icon: "📍" },
-  { href: "/admin/docs", label: "מדריך פיתוח", icon: "📚" },
+  { href: "/admin", label: "לוח בקרה", icon: <LuLayoutDashboard size={18} /> },
+  { href: "/admin/live", label: "מפה חיה", icon: <LuMap size={18} /> },
+  { href: "/admin/missions", label: "משימות NFR", icon: <LuClipboardList size={18} /> },
+  { href: "/admin/alerts", label: "התראות", icon: <LuSiren size={18} /> },
+  { href: "/admin/leaderboard", label: "טבלת מובילים", icon: <LuTrophy size={18} /> },
+  { href: "/admin/feed", label: "פיד קהילתי", icon: <LuNewspaper size={18} /> },
+  { href: "/admin/users", label: "משתמשים", icon: <LuUsers size={18} /> },
+  { href: "/admin/stations", label: "תחנות", icon: <LuMapPin size={18} /> },
+  { href: "/admin/docs", label: "מדריך פיתוח", icon: <LuBookOpen size={18} /> },
 ];
 
 export default function AdminLayout({
@@ -111,8 +123,18 @@ export default function AdminLayout({
               </div>
             </div>
           </div>
-          <button className="btn-signout" onClick={signOut}>
-            🚪 התנתק
+          <button
+            className="btn-signout"
+            onClick={signOut}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              justifyContent: "center",
+            }}
+          >
+            <LuLogOut size={16} />
+            התנתק
           </button>
         </div>
       </aside>

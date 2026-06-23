@@ -14,6 +14,17 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import {
+  LuSmartphone,
+  LuRadio,
+  LuFlame,
+  LuActivity,
+  LuSiren,
+  LuClipboardList,
+  LuTrophy,
+  LuNewspaper,
+  LuUser,
+} from "react-icons/lu";
 
 export default function AdminDashboard() {
   const pins = useLive();
@@ -55,19 +66,25 @@ export default function AdminDashboard() {
       {/* ── Stat cards ── */}
       <div className="stats-grid">
         <div className="stat-card terracotta animate-fade-in stagger-1">
-          <div className="stat-icon">📱</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuSmartphone size={24} />
+          </div>
           <div className="stat-value">{phones}</div>
           <div className="stat-label">מטיילים פעילים</div>
         </div>
 
         <div className="stat-card sky animate-fade-in stagger-2">
-          <div className="stat-icon">📡</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuRadio size={24} />
+          </div>
           <div className="stat-value">{sensors}</div>
           <div className="stat-label">חיישנים מחוברים</div>
         </div>
 
         <div className="stat-card gold animate-fade-in stagger-3">
-          <div className="stat-icon">🔥</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuFlame size={24} />
+          </div>
           <div className="stat-value">
             {torch ? (torch.status === "held" ? "נישא" : "ממתין") : "—"}
           </div>
@@ -75,19 +92,25 @@ export default function AdminDashboard() {
         </div>
 
         <div className="stat-card forest animate-fade-in stagger-4">
-          <div className="stat-icon">🏃</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuActivity size={24} />
+          </div>
           <div className="stat-value">{communityKm.toFixed(1)}</div>
           <div className="stat-label">ק״מ קהילתי</div>
         </div>
 
         <div className="stat-card danger animate-fade-in stagger-5">
-          <div className="stat-icon">🚨</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuSiren size={24} />
+          </div>
           <div className="stat-value">{activeAlerts}</div>
           <div className="stat-label">התראות פעילות</div>
         </div>
 
         <div className="stat-card mint animate-fade-in stagger-6">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LuClipboardList size={24} />
+          </div>
           <div className="stat-value">{activeMissions}</div>
           <div className="stat-label">משימות פעילות</div>
         </div>
@@ -97,8 +120,8 @@ export default function AdminDashboard() {
       <div className="two-col">
         {/* Top hikers */}
         <div className="card">
-          <h3 style={{ margin: "0 0 var(--sp-md)", fontWeight: 800 }}>
-            🏆 מובילים
+          <h3 style={{ margin: "0 0 var(--sp-md)", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+            <LuTrophy /> מובילים
           </h3>
           {topUsers.length === 0 ? (
             <p style={{ color: "var(--c-muted)", fontSize: "0.875rem" }}>
@@ -132,8 +155,8 @@ export default function AdminDashboard() {
 
         {/* Recent feed */}
         <div className="card">
-          <h3 style={{ margin: "0 0 var(--sp-md)", fontWeight: 800 }}>
-            📰 פוסטים אחרונים
+          <h3 style={{ margin: "0 0 var(--sp-md)", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+            <LuNewspaper /> פוסטים אחרונים
           </h3>
           {posts.length === 0 ? (
             <p style={{ color: "var(--c-muted)", fontSize: "0.875rem" }}>
@@ -143,7 +166,7 @@ export default function AdminDashboard() {
             <div>
               {posts.slice(0, 5).map((p) => (
                 <div key={p.id} className="feed-card" style={{ borderRadius: 0 }}>
-                  <div className="feed-avatar">
+                  <div className="feed-avatar" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {p.authorPhoto ? (
                       <img
                         src={p.authorPhoto}
@@ -151,7 +174,7 @@ export default function AdminDashboard() {
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      "👤"
+                      <LuUser size={20} />
                     )}
                   </div>
                   <div className="feed-body">

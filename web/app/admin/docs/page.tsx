@@ -1,10 +1,15 @@
 "use client";
 
+import { LuBookOpen } from "react-icons/lu";
+
 export default function DocsPage() {
   return (
     <div className="animate-fade-in" style={{ direction: "rtl" }}>
       <div className="page-header">
-        <h1 className="page-title">📚 מדריך פיתוח</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuBookOpen />
+          מדריך פיתוח
+        </h1>
         <p className="page-subtitle">הוראות והסברים לפיתוח האפליקציה</p>
       </div>
 

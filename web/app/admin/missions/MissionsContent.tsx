@@ -22,6 +22,7 @@ import { db } from "@/lib/firebase";
 import { colors } from "@/lib/content";
 import { useMissions } from "@/lib/hooks/useMissions";
 import type { NFR } from "@/lib/hooks/useMissions";
+import { LuClipboardList, LuLock } from "react-icons/lu";
 
 const INITIAL_CENTER: [number, number] = [32.72, 35.27];
 
@@ -92,7 +93,10 @@ export default function MissionsContent() {
   return (
     <div className="animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">📋 ניהול משימות (NFR)</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <LuClipboardList />
+          ניהול משימות (NFR)
+        </h1>
         <p className="page-subtitle">
           הצב משימות התנדבות גיאוגרפיות על השביל
         </p>
@@ -212,16 +216,23 @@ export default function MissionsContent() {
               </div>
               <button
                 className="btn btn-primary btn-pill"
-                style={{ width: "100%" }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}
                 onClick={save}
                 disabled={!point || !title || saving}
               >
-                {saving ? "שומר..." : "📋 פרסם משימה"}
+                {saving ? "שומר..." : (
+                  <>
+                    <LuClipboardList size={16} />
+                    פרסם משימה
+                  </>
+                )}
               </button>
             </div>
           ) : (
             <div className="card" style={{ textAlign: "center", padding: "var(--sp-lg)" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)" }}>🔒</div>
+              <div style={{ fontSize: "2rem", marginBottom: "var(--sp-sm)", display: "flex", justifyContent: "center" }}>
+                <LuLock />
+              </div>
               <strong style={{ display: "block", marginBottom: 4 }}>מצב צפייה בלבד</strong>
               <p style={{ fontSize: "0.8125rem", color: "var(--c-muted)", margin: 0 }}>
                 אין לך הרשאות ליצור, להשבית או למחוק משימות.
@@ -238,7 +249,9 @@ export default function MissionsContent() {
 
           {nfrs.length === 0 ? (
             <div className="empty-state">
-              <div className="icon">📋</div>
+              <div className="icon" style={{ display: "flex", justifyContent: "center" }}>
+                <LuClipboardList size={48} />
+              </div>
               <div className="title">אין משימות עדיין</div>
               <div className="desc">
                 לחץ על המפה ומלא את הטופס ליצירת משימה

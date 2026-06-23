@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthProvider";
+import { LuLock } from "react-icons/lu";
 
 export default function LoginPage() {
   const { user, role, initializing, signInWithGoogle } = useAuth();
@@ -44,7 +45,9 @@ export default function LoginPage() {
         <h1>שביל כרמל-כנרת</h1>
         <p className="tagline">ללכת בדרכן, לנשום את ערכיהן</p>
 
-        <div className="admin-badge">🔒 כניסת מנהלים</div>
+        <div className="admin-badge" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <LuLock size={14} /> כניסת מנהלים
+        </div>
 
         <button
           className="btn-google"
