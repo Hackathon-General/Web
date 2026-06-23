@@ -57,6 +57,17 @@ function getJitteredCoords(lat: number, lng: number, seed: string): [number, num
   return [lat + offsetLat, lng + offsetLng];
 }
 
+function formatPostDate(ts?: any) {
+  if (!ts) return "—";
+  if (typeof ts.toDate === "function") {
+    return ts.toDate().toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+  if (ts.seconds !== undefined) {
+    return new Date(ts.seconds * 1000).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+  return new Date(ts).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
 function createMapIcon(svgMarkup: string, backgroundColor: string, size: number = 24) {
   return L.divIcon({
     className: "",
@@ -446,7 +457,7 @@ export default function LiveMapContent() {
                       <div style={{ textAlign: "right" }}>
                         <strong style={{ fontSize: "0.875rem", display: "block" }}>{post.authorName ?? "אנונימי"}</strong>
                         <span style={{ fontSize: "0.6875rem", color: "#888" }}>
-                          {post.createdAt ? new Date(post.createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"}
+                          {formatPostDate(post.createdAt)}
                         </span>
                       </div>
                       {post.authorPhoto ? (
